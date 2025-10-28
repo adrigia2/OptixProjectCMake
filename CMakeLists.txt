@@ -31,15 +31,24 @@ include_directories(
 # ✅ Collega librerie CUDA
 link_directories(${CUDA_LIBRARY_DIRS})
 
-# ✅ Collega le librerie OptiX e CUDA
+
+
+
+
+# add GLFW
+# project path + /common/glfw/include
+include_directories("${PROJECT_SOURCE_DIR}/common/glfw/include")
+find_library(GLFW_LIB NAMES glfw3 PATHS "${PROJECT_SOURCE_DIR}/common/glfw/lib-vc2022" NO_DEFAULT_PATH)
+link_directories("${PROJECT_SOURCE_DIR}/common/glfw/lib-vc2022")
+
 link_libraries(
   ${CUDA_LIBRARIES}
   ${OptiX_LIBRARIES}
-  "${OptiX_INSTALL_DIR}/lib/glfw3dll.lib"
+  ${CUDA_LIB}
+  ${GLFW_LIB}
 )
 
-# add GLFW
-include_directories("${OptiX_INCLUDE}/GLFW/include")
+
 
 set(gdt_dir ${PROJECT_SOURCE_DIR}/common/gdt/)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${gdt_dir}/cmake/")
