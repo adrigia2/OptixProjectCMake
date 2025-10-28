@@ -10,7 +10,6 @@ if (POLICY CMP0141)
        $<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-# ✅ Imposta il percorso di OptiX
 set(OptiX_INSTALL_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0")
 
 # ✅ Converti il path (gestisce spazi in 'ProgramData')
@@ -36,6 +35,22 @@ link_directories(${CUDA_LIBRARY_DIRS})
 link_libraries(
   ${CUDA_LIBRARIES}
   ${OptiX_LIBRARIES}
+  "${OptiX_INSTALL_DIR}/lib/glfw3dll.lib"
 )
 
+# add GLFW
+include_directories("${OptiX_INCLUDE}/GLFW/include")
+
+set(gdt_dir ${PROJECT_SOURCE_DIR}/common/gdt/)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${gdt_dir}/cmake/")
+include(${gdt_dir}/cmake/configure_build_type.cmake)
+include(${gdt_dir}/cmake/configure_optix.cmake)
+
+include_directories(${gdt_dir})
+add_subdirectory(${gdt_dir} EXCLUDE_FROM_ALL)
+
+include_directories(common)
+add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
+
 add_subdirectory(ExecutableProject)
+add_subdirectory(example03_inGLFWindow)
