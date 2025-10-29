@@ -40,6 +40,7 @@ link_directories(${CUDA_LIBRARY_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/common/glfw/include")
 find_library(GLFW_LIB NAMES glfw3 PATHS "${PROJECT_SOURCE_DIR}/common/glfw/lib-vc2022" NO_DEFAULT_PATH)
 link_directories("${PROJECT_SOURCE_DIR}/common/glfw/lib-vc2022")
+find_library(CUDA_LIB NAMES cuda PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" NO_DEFAULT_PATH)
 
 link_libraries(
   ${CUDA_LIBRARIES}
@@ -48,6 +49,7 @@ link_libraries(
   ${GLFW_LIB}
 )
 
+message(${CUDA_LIB})
 
 
 set(gdt_dir ${PROJECT_SOURCE_DIR}/common/gdt/)
