@@ -1,0 +1,3 @@
+[submodule "NeRF_Pytorch"]
+	path = NeRF_Pytorch
+	url = .\\NeRF_Pytorch\\
