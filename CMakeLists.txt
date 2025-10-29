@@ -65,3 +65,4 @@ add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
 
 add_subdirectory(ExecutableProject)
 add_subdirectory(example03_inGLFWindow)
+add_subdirectory(example04_firstTriangleMesh)
