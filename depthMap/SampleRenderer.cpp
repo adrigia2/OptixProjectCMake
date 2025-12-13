@@ -16,6 +16,7 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "SampleRenderer.h"
+#include "TransformReader.h"
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
 
@@ -636,6 +637,86 @@ namespace osc {
   {
     colorBuffer.download(h_pixels,
                          launchParams.frame.size.x*launchParams.frame.size.y);
+  }
+
+  /*! download the rendered depth buffer */
+  void SampleRenderer::downloadDepthMap(float h_depths[])
+  {
+    depthBuffer.download(h_depths,
+                       launchParams.frame.size.x*launchParams.frame.size.y);
+  }
+
+  /*! generate depth maps for all cameras in transforms.json */
+  void SampleRenderer::generateDepthMapsFromTransform(const std::string& transformFile, 
+                                                     const std::string& outputDir)
+  {
+    TransformData transforms;
+    if (!transforms.loadFromFile(transformFile)) {
+      std::cerr << "Errore nel caricamento del file transforms.json" << std::endl;
+      return;
+    }
+    
+    // Ridimensiona i buffer per la risoluzione specificata
+    resize(vec2i(transforms.w, transforms.h));
+    
+    // Alloca il buffer depth se non già allocato
+    depthBuffer.resize(transforms.w * transforms.h * sizeof(float));
+    launchParams.frame.depthBuffer = (float*)depthBuffer.d_pointer();
+    
+    std::vector<float> depthData(transforms.w * transforms.h);
+    
+    std::cout << "Inizio generazione depth maps..." << std::endl;
+    
+    for (size_t i = 0; i < transforms.frames.size(); i++) {
+      const auto& frame = transforms.frames[i];
+      
+      // Crea la camera dal transform
+      Camera camera;
+      camera.from = frame.getPosition();
+      camera.at = camera.from + frame.getForward();
+      camera.up = frame.getUp();
+      
+      std::cout << "Rendering depth map " << (i+1) << "/" << transforms.frames.size() 
+                << " - Camera position: " << camera.from << std::endl;
+      
+      // Imposta la camera e renderizza
+      setCamera(camera);
+      render();
+      
+      // Scarica i dati depth
+      downloadDepthMap(depthData.data());
+      
+      // Salva su file binario
+      std::string outputFile = outputDir + "/depth_" + std::to_string(i) + ".bin";
+      std::ofstream outFile(outputFile, std::ios::binary);
+      if (outFile.is_open()) {
+        outFile.write(reinterpret_cast<const char*>(depthData.data()), 
+                      depthData.size() * sizeof(float));
+        outFile.close();
+        std::cout << "  Salvata: " << outputFile << std::endl;
+      } else {
+        std::cerr << "  ERRORE: Impossibile salvare " << outputFile << std::endl;
+      }
+      
+      // Opzionale: salva anche un file di testo con metadati
+      if (i == 0) {
+        std::string metaFile = outputDir + "/depth_metadata.txt";
+        std::ofstream metaOut(metaFile);
+        if (metaOut.is_open()) {
+          metaOut << "Width: " << transforms.w << std::endl;
+          metaOut << "Height: " << transforms.h << std::endl;
+          metaOut << "NumFrames: " << transforms.frames.size() << std::endl;
+          metaOut << "CameraAngleX: " << transforms.camera_angle_x << std::endl;
+          metaOut.close();
+        }
+      }
+    }
+    
+    std::cout << std::endl;
+    std::cout << GDT_TERMINAL_GREEN 
+              << "Generazione depth maps completata! Totale: " << transforms.frames.size() 
+              << GDT_TERMINAL_DEFAULT << std::endl;
+    std::cout << "File salvati in: " << outputDir << std::endl;
   }
 
 } // ::osc

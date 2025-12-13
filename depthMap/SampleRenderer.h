@@ -73,8 +73,16 @@ namespace osc {
     /*! download the rendered color buffer */
     void downloadPixels(uint32_t h_pixels[]);
 
+    /*! download the rendered depth buffer */
+    void downloadDepthMap(float h_depths[]);
+
     /*! set camera to render with */
     void setCamera(const Camera &camera);
+
+    /*! generate depth maps for all cameras in transforms.json */
+    void generateDepthMapsFromTransform(const std::string& transformFile, 
+                                        const std::string& outputDir);
+
   protected:
     // ------------------------------------------------------------------
     // internal helper functions
@@ -149,6 +157,7 @@ namespace osc {
     /*! @} */
 
     CUDABuffer colorBuffer;
+    CUDABuffer depthBuffer;  // Aggiunto buffer per depth map
 
     /*! the camera we are to render with. */
     Camera lastSetCamera;

@@ -26,6 +26,8 @@ add_executable(depthMap
   CUDABuffer.h
   LaunchParams.h
   SampleRenderer.h
+  TransformReader.h
+
   SampleRenderer.cpp
   main.cpp
   )

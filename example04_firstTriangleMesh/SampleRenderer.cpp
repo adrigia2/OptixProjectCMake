@@ -593,4 +593,67 @@ namespace osc {
                          launchParams.frame.size.x*launchParams.frame.size.y);
   }
 
+  // Aggiungi queste implementazioni
+
+  void SampleRenderer::renderDepthMap(const Camera &camera)
+  {
+    setCamera(camera);
+    render(); // Usa il rendering esistente
+  }
+
+  void SampleRenderer::downloadDepthMap(float* h_depths)
+  {
+    depthBuffer.download(h_depths, launchParams.frame.size.x * launchParams.frame.size.y);
+  }
+
+  void SampleRenderer::generateDepthMapsFromTransform(const std::string& transformFile, 
+                                                       const std::string& outputDir)
+  {
+    TransformData transforms;
+    if (!transforms.loadFromFile(transformFile)) {
+      std::cerr << "Errore nel caricamento del file transform.json" << std::endl;
+      return;
+    }
+    
+    // Ridimensiona il buffer per la risoluzione specificata
+    resize(vec2i(transforms.w, transforms.h));
+    
+    // Alloca il buffer depth
+    if (!depthBuffer.d_ptr) {
+      depthBuffer.alloc(transforms.w * transforms.h * sizeof(float));
+    }
+    launchParams.frame.depthBuffer = (float*)depthBuffer.d_pointer();
+    
+    std::vector<float> depthData(transforms.w * transforms.h);
+    
+    for (size_t i = 0; i < transforms.frames.size(); i++) {
+      const auto& frame = transforms.frames[i];
+      
+      // Crea la camera dal transform
+      Camera camera;
+      camera.from = frame.getPosition();
+      camera.at = camera.from + frame.getForward();
+      camera.up = frame.getUp();
+      
+      std::cout << "Rendering depth map " << (i+1) << "/" << transforms.frames.size() 
+                << " - Camera at: " << camera.from << std::endl;
+      
+      // Renderizza la depth map
+      renderDepthMap(camera);
+      
+      // Scarica i dati
+      downloadDepthMap(depthData.data());
+      
+      // Salva su file
+      std::string outputFile = outputDir + "/depth_" + std::to_string(i) + ".bin";
+      std::ofstream outFile(outputFile, std::ios::binary);
+      outFile.write(reinterpret_cast<const char*>(depthData.data()), 
+                    depthData.size() * sizeof(float));
+      outFile.close();
+      
+      std::cout << "Salvata depth map: " << outputFile << std::endl;
+    }
+    
+    std::cout << "Generazione depth maps completata!" << std::endl;
+  }
 } // ::osc

@@ -26,6 +26,7 @@ namespace osc {
   {
     struct {
       uint32_t *colorBuffer;
+      float    *depthBuffer;  // Aggiunto buffer per depth map
       vec2i     size;
     } frame;
     

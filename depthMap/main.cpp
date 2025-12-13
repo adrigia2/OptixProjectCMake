@@ -113,13 +113,13 @@ namespace osc {
   {
     try {
       TriangleMesh model;
-      // 100x100 thin ground plane
-      //model.addCube(vec3f(0.f,-1.5f,0.f),vec3f(10.f,.1f,10.f));
-      // a unit cube centered on top of that
-      //model.addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f));
-
-	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/3dModel/uploads_files_2057468_Branches+in+Vases+OBJM1/OBJ+MTL.obj");
+      
+      // Carica il modello 3D
+	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/TestNerf/vase.obj");
 	  model.addFromObjFile(filePath);
+
+      std::cout << "Modello caricato: " << model.vertex.size() << " vertici, " 
+                << model.index.size() << " triangoli" << std::endl;
 
       Camera camera = { /*from*/vec3f(-10.f,2.f,-12.f),
                         /* at */vec3f(0.f,0.f,0.f),
@@ -129,9 +129,56 @@ namespace osc {
       // camera knows how much to move for any given user interaction:
       const float worldScale = 10.f;
 
-      SampleWindow *window = new SampleWindow("Optix 7 Course Example",
-                                              model,camera,worldScale);
-      window->run();
+      // Controlla se è richiesta la generazione di depth maps da transforms.json
+      bool generateDepthMaps = false;
+      std::string transformFile;
+      std::string outputDir = "./depth_maps";
+      
+      for (int i = 1; i < ac; i++) {
+        std::string arg = av[i];
+        if (arg == "--transform" && i + 1 < ac) {
+          transformFile = av[i + 1];
+          generateDepthMaps = true;
+          i++;
+        } else if (arg == "--output" && i + 1 < ac) {
+          outputDir = av[i + 1];
+          i++;
+        } else if (arg == "--help") {
+          std::cout << "Uso:" << std::endl;
+          std::cout << "  " << av[0] << " [opzioni]" << std::endl;
+          std::cout << std::endl;
+          std::cout << "Opzioni:" << std::endl;
+          std::cout << "  --transform <file>  Percorso al file transforms.json" << std::endl;
+          std::cout << "  --output <dir>      Directory di output per le depth maps (default: ./depth_maps)" << std::endl;
+          std::cout << "  --help              Mostra questo messaggio" << std::endl;
+          return 0;
+        }
+      }
+
+      if (generateDepthMaps && !transformFile.empty()) {
+        std::cout << std::endl;
+        std::cout << "==================================================" << std::endl;
+        std::cout << "Modalità generazione depth maps" << std::endl;
+        std::cout << "Transform file: " << transformFile << std::endl;
+        std::cout << "Output directory: " << outputDir << std::endl;
+        std::cout << "==================================================" << std::endl;
+        std::cout << std::endl;
+        
+        // Crea il renderer senza finestra
+        SampleRenderer renderer(model);
+        
+        // Genera le depth maps
+        renderer.generateDepthMapsFromTransform(transformFile, outputDir);
+        
+        std::cout << std::endl;
+        std::cout << "Operazione completata!" << std::endl;
+        
+      } else {
+        // Modalità finestra interattiva normale
+        SampleWindow *window = new SampleWindow("Optix 7 Depth Map Generator",
+                                                model,camera,worldScale);
+        window->run();
+      }
       
     } catch (std::runtime_error& e) {
       std::cout << GDT_TERMINAL_RED << "FATAL ERROR: " << e.what()
