@@ -622,11 +622,13 @@ namespace osc {
 
     // resize our cuda frame buffer
     colorBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
+    depthBuffer.resize(newSize.x*newSize.y*sizeof(float));
 
     // update the launch parameters that we'll pass to the optix
     // launch:
     launchParams.frame.size  = newSize;
     launchParams.frame.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
+    launchParams.frame.depthBuffer = (float*)depthBuffer.d_pointer();
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
@@ -648,7 +650,7 @@ namespace osc {
 
   /*! generate depth maps for all cameras in transforms.json */
   void SampleRenderer::generateDepthMapsFromTransform(const std::string& transformFile, 
-                                                     const std::string& outputDir)
+                                                   const std::string& outputDir)
   {
     TransformData transforms;
     if (!transforms.loadFromFile(transformFile)) {
@@ -657,11 +659,8 @@ namespace osc {
     }
     
     // Ridimensiona i buffer per la risoluzione specificata
+    // resize() allocherà automaticamente sia colorBuffer che depthBuffer
     resize(vec2i(transforms.w, transforms.h));
-    
-    // Alloca il buffer depth se non già allocato
-    depthBuffer.resize(transforms.w * transforms.h * sizeof(float));
-    launchParams.frame.depthBuffer = (float*)depthBuffer.d_pointer();
     
     std::vector<float> depthData(transforms.w * transforms.h);
     

@@ -163,9 +163,9 @@ namespace osc {
         optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
 
         // Scrivi anche la depth se il buffer è disponibile
-        //if (optixLaunchParams.frame.depthBuffer) {
-        //    optixLaunchParams.frame.depthBuffer[fbIndex] = prd.depth;
-        //}
+        if (optixLaunchParams.frame.depthBuffer) {
+            optixLaunchParams.frame.depthBuffer[fbIndex] = prd.depth;
+        }
     }
 
 } // ::osc
