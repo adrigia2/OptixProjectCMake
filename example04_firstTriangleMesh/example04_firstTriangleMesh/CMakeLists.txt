@@ -28,7 +28,7 @@ add_executable(ex04_firstTriangleMesh
   SampleRenderer.h
   SampleRenderer.cpp
   main.cpp
-   "example04_firstTriangleMesh/CUDABuffer.h" "example04_firstTriangleMesh/LaunchParams.h" "example04_firstTriangleMesh/main.cpp" "example04_firstTriangleMesh/optix7.h" "example04_firstTriangleMesh/SampleRenderer.cpp" "example04_firstTriangleMesh/SampleRenderer.h")
+  )
 
 target_link_libraries(ex04_firstTriangleMesh
   gdt

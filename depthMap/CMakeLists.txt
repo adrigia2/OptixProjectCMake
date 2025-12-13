@@ -20,7 +20,7 @@ include_directories(${OptiX_INCLUDE})
 
 cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
 
-add_executable(ex04_firstTriangleMesh
+add_executable(depthMap
   ${embedded_ptx_code}
   optix7.h
   CUDABuffer.h
@@ -28,9 +28,9 @@ add_executable(ex04_firstTriangleMesh
   SampleRenderer.h
   SampleRenderer.cpp
   main.cpp
-   "example04_firstTriangleMesh/CUDABuffer.h" "example04_firstTriangleMesh/LaunchParams.h" "example04_firstTriangleMesh/main.cpp" "example04_firstTriangleMesh/optix7.h" "example04_firstTriangleMesh/SampleRenderer.cpp" "example04_firstTriangleMesh/SampleRenderer.h")
+  "depthMap/CUDABuffer.h" "depthMap/LaunchParams.h" "depthMap/main.cpp" "depthMap/optix7.h" "depthMap/SampleRenderer.cpp" "depthMap/SampleRenderer.h")
 
-target_link_libraries(ex04_firstTriangleMesh
+target_link_libraries(depthMap
   gdt
   # glfw and opengl, for display
   glfWindow
