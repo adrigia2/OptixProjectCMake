@@ -28,7 +28,7 @@ add_executable(depthMap
   SampleRenderer.h
   SampleRenderer.cpp
   main.cpp
-  "depthMap/CUDABuffer.h" "depthMap/LaunchParams.h" "depthMap/main.cpp" "depthMap/optix7.h" "depthMap/SampleRenderer.cpp" "depthMap/SampleRenderer.h")
+  )
 
 target_link_libraries(depthMap
   gdt

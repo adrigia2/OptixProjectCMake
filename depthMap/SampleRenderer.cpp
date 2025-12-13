@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define TINYOBJLOADER_IMPLEMENTATION
 #include "SampleRenderer.h"
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
@@ -60,6 +61,50 @@ namespace osc {
     xfm.l.vy = vec3f(0.f,size.y,0.f);
     xfm.l.vz = vec3f(0.f,0.f,size.z);
     addUnitCube(xfm);
+  }
+
+  void TriangleMesh::addFromObjFile(const std::string& filename)
+  {
+      tinyobj::attrib_t attrib;
+	  std::vector<tinyobj::shape_t> shapes;
+	  std::vector<tinyobj::material_t> materials;
+	  std::string warn;
+      
+
+	  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, filename.c_str());
+      if (!warn.empty()) {
+          std::cout << "WARN: " << warn << std::endl;
+      }
+      if (!ret) {
+          std::cerr << "Failed to load/parse .obj file: " << filename << std::endl;
+          return;
+      }
+      // Loop over shapes
+      for (size_t s = 0; s < shapes.size(); s++) {
+          // Loop over faces(polygon)
+          size_t index_offset = 0;
+          for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+              int fv = shapes[s].mesh.num_face_vertices[f];
+              // Only process triangles
+              if (fv != 3) {
+                  index_offset += fv;
+                  continue;
+              }
+              vec3i face_idx;
+              // Loop over vertices in the face.
+              for (size_t v = 0; v < fv; v++) {
+                  // access to vertex
+                  tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+                  tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
+                  tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
+                  tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
+                  vertex.push_back(vec3f(vx, vy, vz));
+                  face_idx[v] = static_cast<int>(vertex.size() - 1);
+              }
+              index.push_back(face_idx);
+              index_offset += fv;
+          }
+	  }
   }
 
   /*! add a unit cube (subject to given xfm matrix) to the current

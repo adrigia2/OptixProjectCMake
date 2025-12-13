@@ -21,6 +21,8 @@
 #include "LaunchParams.h"
 #include "gdt/math/AffineSpace.h"
 
+#include "objLoader/tiny_obj_loader.h"
+
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
 
@@ -42,6 +44,7 @@ namespace osc {
     
     //! add aligned cube aith front-lower-left corner and size
     void addCube(const vec3f &center, const vec3f &size);
+	void addFromObjFile(const std::string& filename);
     
     std::vector<vec3f> vertex;
     std::vector<vec3i> index;

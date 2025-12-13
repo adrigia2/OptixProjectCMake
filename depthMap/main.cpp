@@ -114,9 +114,12 @@ namespace osc {
     try {
       TriangleMesh model;
       // 100x100 thin ground plane
-      model.addCube(vec3f(0.f,-1.5f,0.f),vec3f(10.f,.1f,10.f));
+      //model.addCube(vec3f(0.f,-1.5f,0.f),vec3f(10.f,.1f,10.f));
       // a unit cube centered on top of that
-      model.addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f));
+      //model.addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f));
+
+	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/3dModel/uploads_files_2057468_Branches+in+Vases+OBJM1/OBJ+MTL.obj");
+	  model.addFromObjFile(filePath);
 
       Camera camera = { /*from*/vec3f(-10.f,2.f,-12.f),
                         /* at */vec3f(0.f,0.f,0.f),
