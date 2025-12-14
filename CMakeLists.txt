@@ -62,6 +62,8 @@ add_subdirectory(${gdt_dir} EXCLUDE_FROM_ALL)
 
 include_directories(common)
 add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
+add_subdirectory(common/pybind11)
+
 
 #add_subdirectory(ExecutableProject)
 #add_subdirectory(example03_inGLFWindow)

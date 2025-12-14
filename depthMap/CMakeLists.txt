@@ -32,9 +32,31 @@ add_executable(depthMap
   main.cpp
   )
 
+pybind11_add_module(depthMapModule
+  ${embedded_ptx_code}
+  pybind11_wrapper.cpp
+  SampleRenderer.cpp
+  SampleRenderer.h
+  CUDABuffer.h
+  LaunchParams.h
+  optix7.h
+  TransformReader.h
+)
+
 target_link_libraries(depthMap
   gdt
   # glfw and opengl, for display
   glfWindow
   ${OPENGL_gl_LIBRARY}
-  )
+)
+
+target_link_libraries(depthMapModule PRIVATE
+  gdt
+  ${CUDA_LIBRARIES}
+  ${OptiX_LIBRARY}
+)
+
+target_include_directories(depthMapModule PRIVATE
+  ${OptiX_INCLUDE}
+  ${CUDA_INCLUDE_DIRS}
+)
