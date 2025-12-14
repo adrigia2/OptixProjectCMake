@@ -668,6 +668,7 @@ namespace osc {
     
     for (size_t i = 0; i < transforms.frames.size(); i++) {
       const auto& frame = transforms.frames[i];
+	  const auto filename = frame.getFileName(false);
       
       // Crea la camera dal transform
       Camera camera;
@@ -686,7 +687,7 @@ namespace osc {
       downloadDepthMap(depthData.data());
       
       // Salva su file binario
-      std::string outputFile = outputDir + "/depth_" + std::to_string(i) + ".bin";
+      std::string outputFile = outputDir + "\\depth_" + filename + ".bin";
       std::ofstream outFile(outputFile, std::ios::binary);
       if (outFile.is_open()) {
         outFile.write(reinterpret_cast<const char*>(depthData.data()), 
