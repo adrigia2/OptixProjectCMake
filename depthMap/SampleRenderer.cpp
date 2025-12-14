@@ -668,7 +668,7 @@ namespace osc {
     
     for (size_t i = 0; i < transforms.frames.size(); i++) {
       const auto& frame = transforms.frames[i];
-	  const auto filename = frame.getFileName(false);
+	  const auto filename = frame.getFileName(osc::IMAGE_TYPE_RGB, false);
       
       // Crea la camera dal transform
       Camera camera;
@@ -688,6 +688,8 @@ namespace osc {
       
       // Salva su file binario
       std::string outputFile = outputDir + "\\depth_" + filename + ".bin";
+      transforms.frames[i].setDepthPath(outputFile); // Aggiorna il percorso del file depth nel frame
+
       std::ofstream outFile(outputFile, std::ios::binary);
       if (outFile.is_open()) {
         outFile.write(reinterpret_cast<const char*>(depthData.data()), 
@@ -717,6 +719,20 @@ namespace osc {
               << "Generazione depth maps completata! Totale: " << transforms.frames.size() 
               << GDT_TERMINAL_DEFAULT << std::endl;
     std::cout << "File salvati in: " << outputDir << std::endl;
+
+    // Salva transformDepth.json nella stessa directory delle depth map
+    std::string transformDepthFile = outputDir + "\\transformDepth.json";
+    std::cout << "\nCreazione file transformDepth.json..." << std::endl;
+
+    if (transforms.saveToFileWithDepth(transformDepthFile, "depth")) {
+        std::cout << GDT_TERMINAL_GREEN 
+                  << "File transformDepth.json creato con successo!" 
+                  << GDT_TERMINAL_DEFAULT << std::endl;
+    } else {
+        std::cerr << GDT_TERMINAL_RED 
+                  << "ERRORE: Impossibile creare transformDepth.json" 
+                  << GDT_TERMINAL_DEFAULT << std::endl;
+    }
   }
 
 } // ::osc
