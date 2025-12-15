@@ -1,3 +1,6 @@
 [submodule "NeRF_Pytorch"]
 	path = NeRF_Pytorch
 	url = https://github.com/adrigia2/NeRF_Pytorch.git
+[submodule "common/pybind11"]
+	path = common/pybind11
+	url = https://github.com/pybind/pybind11.git
