@@ -31,6 +31,7 @@ namespace osc {
     vec3f at;
     /*! general up-vector */
     vec3f up;
+	float camera_angle_y = 0.6f; //!< vertical field of view in radians
   };
   
   /*! a simple indexed triangle mesh that our sample renderer will

@@ -17,6 +17,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "SampleRenderer.h"
 #include "TransformReader.h"
+#include <cmath>
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
 
@@ -605,7 +606,7 @@ namespace osc {
     launchParams.camera.position  = camera.from;
     launchParams.camera.direction = normalize(camera.at - camera.from);
     
-    const float cosFovy = 0.66f;
+    float cosFovy = camera.camera_angle_y;
     const float aspect = launchParams.frame.size.x / float(launchParams.frame.size.y);
     
     // Inverti l'ordine del cross product per cambiare handedness

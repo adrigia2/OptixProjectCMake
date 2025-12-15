@@ -115,7 +115,7 @@ namespace osc {
       TriangleMesh model;
       
       // Carica il modello 3D
-	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/TestNerf/vase.obj");
+	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/NeRF_Pytorch/TestNerf/vase.obj");
 	  model.addFromObjFile(filePath);
 
       std::cout << "Modello caricato: " << model.vertex.size() << " vertici, " 

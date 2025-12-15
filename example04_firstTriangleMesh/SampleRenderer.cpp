@@ -634,6 +634,7 @@ namespace osc {
       camera.from = frame.getPosition();
       camera.at = camera.from + frame.getForward();
       camera.up = frame.getUp();
+      camera.camera_angle_y = transforms.camera_angle_y;
       
       std::cout << "Rendering depth map " << (i+1) << "/" << transforms.frames.size() 
                 << " - Camera at: " << camera.from << std::endl;
