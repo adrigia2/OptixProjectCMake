@@ -603,15 +603,18 @@ namespace osc {
   {
     lastSetCamera = camera;
     launchParams.camera.position  = camera.from;
-    launchParams.camera.direction = normalize(camera.at-camera.from);
+    launchParams.camera.direction = normalize(camera.at - camera.from);
+    
     const float cosFovy = 0.66f;
     const float aspect = launchParams.frame.size.x / float(launchParams.frame.size.y);
+    
+    // Inverti l'ordine del cross product per cambiare handedness
     launchParams.camera.horizontal
-      = cosFovy * aspect * normalize(cross(launchParams.camera.direction,
-                                           camera.up));
+      = cosFovy * aspect * normalize(cross(camera.up, 
+                                           launchParams.camera.direction));
     launchParams.camera.vertical
-      = cosFovy * normalize(cross(launchParams.camera.horizontal,
-                                  launchParams.camera.direction));
+      = cosFovy * normalize(cross(launchParams.camera.direction,
+                                  launchParams.camera.horizontal));
   }
 
   /*! resize frame buffer to given resolution */
