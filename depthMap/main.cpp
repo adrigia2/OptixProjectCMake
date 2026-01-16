@@ -29,7 +29,7 @@ namespace osc {
                  const TriangleMesh &model,
                  const Camera &camera,
                  const float worldScale)
-      : GLFCameraWindow(title,camera.from,camera.at,camera.up,worldScale),
+      : GLFCameraWindow(title,camera.pos,camera.forward,camera.up,worldScale),
         sample(model)
     {
     }
@@ -37,8 +37,8 @@ namespace osc {
     virtual void render() override
     {
       if (cameraFrame.modified) {
-        sample.setCamera(Camera{ cameraFrame.get_from(),
-                                 cameraFrame.get_at(),
+        sample.setCamera(Camera{ cameraFrame.get_position(),
+                                 cameraFrame.get_forward(),
                                  cameraFrame.get_up() });
         cameraFrame.modified = false;
       }
@@ -115,19 +115,19 @@ namespace osc {
       TriangleMesh model;
       
       // Carica il modello 3D
-	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/TestNerf/vase.obj");
+	  auto filePath = std::string("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
 	  model.addFromObjFile(filePath);
 
       std::cout << "Modello caricato: " << model.vertex.size() << " vertici, " 
                 << model.index.size() << " triangoli" << std::endl;
 
-      Camera camera = { /*from*/vec3f(-10.f,2.f,-12.f),
-                        /* at */vec3f(0.f,0.f,0.f),
-                        /* up */vec3f(0.f,1.f,0.f) };
+      Camera camera = { /*pos*/vec3f(0,-10.f,1.f),
+                        /* direction */vec3f(0.f,1.f,0.f),
+                        /* up */vec3f(0.f,0.f,1.f) };
 
       // something approximating the scale of the world, so the
       // camera knows how much to move for any given user interaction:
-      const float worldScale = 10.f;
+      const float worldScale = 1.f;
 
       // Controlla se è richiesta la generazione di depth maps da transforms.json
       bool generateDepthMaps = false;

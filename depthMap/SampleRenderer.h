@@ -28,9 +28,9 @@ namespace osc {
 
   struct Camera {
     /*! camera position - *from* where we are looking */
-    vec3f from;
+    vec3f pos;
     /*! which point we are looking *at* */
-    vec3f at;
+    vec3f forward;
     /*! general up-vector */
     vec3f up;
   };
