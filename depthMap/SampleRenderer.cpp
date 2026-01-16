@@ -602,8 +602,8 @@ namespace osc {
   void SampleRenderer::setCamera(const Camera &camera)
   {
     lastSetCamera = camera;
-    launchParams.camera.position  = camera.from;
-    launchParams.camera.direction = normalize(camera.at-camera.from);
+    launchParams.camera.position  = camera.pos;
+    launchParams.camera.direction = normalize(camera.forward);
     const float cosFovy = 0.66f;
     const float aspect = launchParams.frame.size.x / float(launchParams.frame.size.y);
     launchParams.camera.horizontal
@@ -672,12 +672,12 @@ namespace osc {
       
       // Crea la camera dal transform
       Camera camera;
-      camera.from = frame.getPosition();
-      camera.at = camera.from + frame.getForward();
+      camera.pos = frame.getPosition();
+      camera.forward = frame.getForward();
       camera.up = frame.getUp();
       
       std::cout << "Rendering depth map " << (i+1) << "/" << transforms.frames.size() 
-                << " - Camera position: " << camera.from << std::endl;
+                << " - Camera position: " << camera.pos << std::endl;
       
       // Imposta la camera e renderizza
       setCamera(camera);

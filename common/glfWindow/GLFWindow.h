@@ -138,8 +138,8 @@ namespace osc {
                  computeStableEpsilon(v.z));
     }
 
-    inline vec3f get_from() const { return position; }
-    inline vec3f get_at() const { return getPOI(); }
+    inline vec3f get_position() const { return position; }
+    inline vec3f get_forward() const { return getPOI(); }
     inline vec3f get_up() const { return upVector; }
       
     linear3f      frame         { one };
