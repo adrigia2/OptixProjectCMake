@@ -149,8 +149,9 @@ namespace osc {
 
 		// generate ray direction
 		vec3f rayDir = normalize(camera.direction
-			+ (screen.x - 0.5f) * camera.horizontal
-			+ (screen.y - 0.5f) * -camera.vertical);
+			+ (2.0f * screen.x - 1.0f) * camera.horizontal
+			+ (1.0f - 2.0f * screen.y) * camera.vertical);
+
 
 		optixTrace(optixLaunchParams.traversable,
 			camera.position,

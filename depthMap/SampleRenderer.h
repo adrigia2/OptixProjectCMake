@@ -77,7 +77,7 @@ namespace osc {
     void downloadDepthMap(float h_depths[]);
 
     /*! set camera to render with */
-    void setCamera(const Camera &camera);
+    void setCamera(const Camera &camera, float fovY_radians);
 
     /*! generate depth maps for all cameras in transforms.json */
     void generateDepthMapsFromTransform(const std::string& transformFile, 

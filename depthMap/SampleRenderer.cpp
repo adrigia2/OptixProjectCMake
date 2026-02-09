@@ -599,19 +599,34 @@ namespace osc {
   }
 
   /*! set camera to render with */
-  void SampleRenderer::setCamera(const Camera &camera)
+  void SampleRenderer::setCamera(const Camera &camera, float fovY_radians)
   {
     lastSetCamera = camera;
     launchParams.camera.position  = camera.pos;
     launchParams.camera.direction = normalize(camera.forward);
-    const float cosFovy = 0.66f;
+    
     const float aspect = launchParams.frame.size.x / float(launchParams.frame.size.y);
-    launchParams.camera.horizontal
-      = cosFovy * aspect * normalize(cross(launchParams.camera.direction,
-                                           camera.up));
-    launchParams.camera.vertical
-      = cosFovy * normalize(cross(launchParams.camera.horizontal,
-                                  launchParams.camera.direction));
+    
+    // Convert FOV -> image plane half-size (pinhole model)
+    const float halfHeight = tanf(0.5f * fovY_radians);
+    const float halfWidth = halfHeight * aspect;
+
+    // Build a robust orthonormal basis (right, up, forward)
+    // (If your handedness is flipped, swap cross order as noted below.)
+    auto right = cross(launchParams.camera.direction, camera.up);
+    const float rightLen2 = dot(right, right);
+    if (rightLen2 < 1e-12f) {
+        // Fallback if up is (almost) parallel to direction
+		const auto worldUp = vec3f(0.f, 0.f, 1.f);
+        right = cross(launchParams.camera.direction, worldUp);
+    }
+    right = normalize(right);
+
+    vec3f up = normalize(cross(right, launchParams.camera.direction));
+
+    // These represent half-spans of the image plane in world units at z=1
+    launchParams.camera.horizontal = halfWidth * right;
+    launchParams.camera.vertical = halfHeight * up;
   }
 
   /*! resize frame buffer to given resolution */
@@ -631,7 +646,7 @@ namespace osc {
     launchParams.frame.depthBuffer = (float*)depthBuffer.d_pointer();
 
     // and re-set the camera, since aspect may have changed
-    setCamera(lastSetCamera);
+	setCamera(lastSetCamera, 0.66f); // 0.66 radians ~= 37.8 degrees
   }
 
   /*! download the rendered color buffer */
@@ -680,7 +695,7 @@ namespace osc {
                 << " - Camera position: " << camera.pos << std::endl;
       
       // Imposta la camera e renderizza
-      setCamera(camera);
+	  setCamera(camera, transforms.camera_angle_y);
       render();
       
       // Scarica i dati depth

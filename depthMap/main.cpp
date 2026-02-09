@@ -39,7 +39,7 @@ namespace osc {
       if (cameraFrame.modified) {
         sample.setCamera(Camera{ cameraFrame.get_position(),
                                  cameraFrame.get_forward(),
-                                 cameraFrame.get_up() });
+                                 cameraFrame.get_up() }, 0.66f);
         cameraFrame.modified = false;
       }
       sample.render();
