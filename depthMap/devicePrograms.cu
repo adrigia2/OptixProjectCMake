@@ -61,6 +61,11 @@ namespace osc {
 		float depth;
 	};
 
+	struct IUMPayload {
+		vec3f position;
+		uint8_t mask;
+	};
+
 	//------------------------------------------------------------------------------
 	// closest hit and anyhit programs for radiance-type rays.
 	//
@@ -130,7 +135,7 @@ namespace osc {
 		const int ix = optixGetLaunchIndex().x;
 		const int iy = optixGetLaunchIndex().y;
 
-		const auto& camera = optixLaunchParams.camera;
+		const auto& camera = optixLaunchParams.depth.camera;
 
 		// our per-ray data for this example. what we initialize it to
 		// won't matter, since this value will be overwritten by either
@@ -145,7 +150,7 @@ namespace osc {
 
 		// normalized screen plane position, in [0,1]^2
 		const vec2f screen(vec2f(ix + .5f, iy + .5f)
-			/ vec2f(optixLaunchParams.frame.size));
+			/ vec2f(optixLaunchParams.depth.frame.size));
 
 		// generate ray direction
 		vec3f rayDir = normalize(camera.direction
@@ -176,14 +181,85 @@ namespace osc {
 			| (r << 0) | (g << 8) | (b << 16);
 
 		// and write to frame buffer ...
-		const uint32_t fbIndex = ix + iy * optixLaunchParams.frame.size.x;
-		optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
+		const uint32_t fbIndex = ix + iy * optixLaunchParams.depth.frame.size.x;
+		optixLaunchParams.depth.frame.colorBuffer[fbIndex] = rgba;
 
 		// Scrivi anche la depth se il buffer è disponibile
-		if (optixLaunchParams.frame.depthBuffer) {
-			optixLaunchParams.frame.depthBuffer[fbIndex] = prd.depth;
-			//optixLaunchParams.frame.depthBuffer[fbIndex] = (ix + iy) / float(optixLaunchParams.frame.size.x + optixLaunchParams.frame.size.y); 
+		if (optixLaunchParams.depth.frame.depthBuffer) {
+			optixLaunchParams.depth.frame.depthBuffer[fbIndex] = prd.depth;
+			//optixLaunchParams.depth.frame.depthBuffer[fbIndex] = (ix + iy) / float(optixLaunchParams.depth.frame.size.x + optixLaunchParams.depth.frame.size.y); 
 		}
 	}
+
+	extern "C" __global__ void __raygen__renderIUM()
+	{
+		// compute a test pattern based on pixel ID
+		const int ix = optixGetLaunchIndex().x;
+		const int iy = optixGetLaunchIndex().y;
+
+		auto size = optixLaunchParams.ium.size;
+		auto xCoords = ix / size.width;
+		auto yCoords = iy / size.height;
+		vec3f position = vec3f(xCoords, yCoords, 1.f); // Posizione fittizia basata sulle coordinate del pixel
+		vec3f direction = vec3f(0.f, 0.f, -1.f); // Direzione fittizia verso il basso
+
+		IUMPayload prd;
+		prd.position = vec3f(0.f);
+		prd.mask = 0;
+
+		// the values we store the PRD pointer in:
+		uint32_t u0, u1;
+		packPointer(&prd, u0, u1);
+
+		optixTrace(optixLaunchParams.traversable,
+			position,
+			direction,
+			0.f,    // tmin
+			1e20f,  // tmax
+			0.0f,   // rayTime
+			OptixVisibilityMask(255),
+			OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+			SURFACE_RAY_TYPE,             // SBT offset
+			RAY_TYPE_COUNT,               // SBT stride
+			SURFACE_RAY_TYPE,             // missSBTIndex 
+			u0, u1);
+
+		// Scrivi posizione e mask nei buffer IUM
+		const uint32_t index = ix + iy * size.width;
+		optixLaunchParams.ium.positions[index] = prd.position;
+		optixLaunchParams.ium.masks[index] = prd.mask;
+	}
+
+
+
+	//__miss__renderIUM
+	//__closesthit__renderIUM
+	//__anyhit__renderIUM
+
+	extern "C" __global__ void __miss__renderIUM()
+	{
+		IUMPayload& prd = *(IUMPayload*)getPRD<IUMPayload>();
+		prd.position = vec3f(0.f); // Posizione di default per i miss
+		prd.mask = 0; // Mask di default per i miss
+	}
+
+	extern "C" __global__ void __closesthit__renderIUM()
+	{
+		const int   primID = optixGetPrimitiveIndex();
+		IUMPayload& prd = *(IUMPayload*)getPRD<IUMPayload>();
+		const vec3f O3 = optixGetWorldRayOrigin();
+		const vec3f D3 = optixGetWorldRayDirection();
+		const float  t = optixGetRayTmax();
+		vec3f P = O3 + t * D3;
+		prd.position = P; // Salva la posizione dell'intersezione
+		prd.mask = 1; // Imposta il mask per indicare un hit
+	}
+
+	extern "C" __global__ void __anyhit__renderIUM()
+	{ /*! per questo esempio, questa rimarrà vuota */
+	}
+
+
+
 
 } // ::osc

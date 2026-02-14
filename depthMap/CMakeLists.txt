@@ -25,22 +25,27 @@ add_executable(depthMap
   optix7.h
   CUDABuffer.h
   LaunchParams.h
-  SampleRenderer.h
+  #SampleRenderer.h
   TransformReader.h
-
-  SampleRenderer.cpp
+  LogManager.h
+  LogManager.cpp
+  OptixManager.h
+  OptixManager.cpp
+  #SampleRenderer.cpp
+  TriangleMesh.h
+  TriangleMesh.cpp
   main.cpp
-  )
+   "IUM_Generator.h" "IUM_Generator.cpp" )
 
 pybind11_add_module(depthMapModule
   ${embedded_ptx_code}
-  pybind11_wrapper.cpp
-  SampleRenderer.cpp
-  SampleRenderer.h
+  #pybind11_wrapper.cpp
+  #SampleRenderer.cpp
+  #SampleRenderer.h
   CUDABuffer.h
-  LaunchParams.h
-  optix7.h
-  TransformReader.h
+  #LaunchParams.h
+  #optix7.h
+  #TransformReader.h
 )
 
 target_link_libraries(depthMap
