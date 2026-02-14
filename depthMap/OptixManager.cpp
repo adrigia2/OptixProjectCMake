@@ -130,6 +130,14 @@ void OptixManager::createModule()
     if (sizeof_log > 1) PRINT(log);
 }
 
+void OptixManager::cleanup()
+{
+    OPTIX_CHECK(optixPipelineDestroy(pipeline));
+    OPTIX_CHECK(optixModuleDestroy(module));
+	OPTIX_CHECK(optixDeviceContextDestroy(optixContext));
+	LogManager::LogDebug("Cleaned up Optix");
+}
+
 void OptixManager::addRaygenProgram(const OptixProgramGroup& program)
 {
 	raygenPGs.push_back(program);

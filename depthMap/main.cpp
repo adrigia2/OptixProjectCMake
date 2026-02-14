@@ -219,6 +219,10 @@ namespace osc {
 	  LogManager::LogInfo("Starting rendering...");
       iumGenerator.render();
 
+	  LogManager::LogInfo("Rendering completed");
+	  
+
+
       
       
   }

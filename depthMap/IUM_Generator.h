@@ -45,14 +45,15 @@ protected:
 	OptixTraversableHandle buildAccel(const TriangleMesh& model);
 
 
-	CUDABuffer uvVertexBuffer;
-	CUDABuffer indexBuffer;
-
-	// final acceleration structure buffer
-	CUDABuffer asBuffer;
-
-	CUDABuffer positionsBuffer;
-	CUDABuffer masksBuffer;
+	CUDABuffer uvVertexBuffer;     // Già esistente - per la GAS in UV space
+	CUDABuffer indexBuffer;        // Già esistente
+	CUDABuffer asBuffer;           // Già esistente
+	CUDABuffer positionsBuffer;    // Già esistente
+	CUDABuffer masksBuffer;        // Già esistente
+	
+	// NUOVI BUFFERS per inverse UV mapping
+	CUDABuffer worldVertexBuffer;  // Vertici 3D reali del modello
+	CUDABuffer uvCoordBuffer;      // Coordinate UV per il dispositivo
 
 private:
 	OptixManager& optixManager;

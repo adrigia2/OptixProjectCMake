@@ -96,7 +96,24 @@ void IUM_Generator::render()
 void IUM_Generator::setTraversable(TriangleMesh& model)
 {
     auto& launchParams = optixManager.getLaunchParams();
-	launchParams.traversable = buildAccel(model);
+    
+    // Costruisci la GAS in UV space (come prima)
+    launchParams.traversable = buildAccel(model);
+    
+    // NUOVO: Carica i vertici 3D reali per il mapping
+    worldVertexBuffer.alloc_and_upload(model.vertex);
+    launchParams.ium.worldVertices = (vec3f*)worldVertexBuffer.d_pointer();
+    
+    // NUOVO: Carica le coordinate UV
+    uvCoordBuffer.alloc_and_upload(model.texcoord);
+    launchParams.ium.uvVertices = (vec2f*)uvCoordBuffer.d_pointer();
+    
+    // NUOVO: Passa gli indici (già caricati in buildAccel)
+    launchParams.ium.indices = (vec3i*)indexBuffer.d_pointer();
+    launchParams.ium.numTriangles = (uint32_t)model.index.size();
+    
+    LogManager::LogInfo("IUM geometry data uploaded: %zu vertices, %zu triangles", 
+                        model.vertex.size(), model.index.size());
 }
 
 void IUM_Generator::setTextureSize(uint32_t width, uint32_t height)

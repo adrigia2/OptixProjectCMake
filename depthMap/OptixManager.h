@@ -65,6 +65,8 @@ public:
 	void addHitgroupProgram(const OptixProgramGroup& program);
 	void printStatus();
 
+    void cleanup();
+
 	OptixModule& getModule() { return module; }
 	OptixDeviceContext& getContext() { return optixContext; }
 	LaunchParams& getLaunchParams() { return launchParams; }
@@ -76,6 +78,12 @@ public:
         createContext();
         createModule();
     }
+
+	// distructor
+    ~OptixManager()
+    {
+        cleanup();
+	}
 
     void createPipeline();
     void buildSBT();

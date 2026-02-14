@@ -43,12 +43,20 @@ namespace osc {
 
 		struct ium
 		{
+			// Output buffers
 			vec3f* positions;
 			uint8_t* masks;
+			
 			struct Size {
 				uint32_t width;
 				uint32_t height;
 			} size;
+
+			// Input geometry data per inverse UV mapping
+			vec3f* worldVertices;  // Posizioni 3D reali dei vertici
+			vec2f* uvVertices;     // Coordinate UV dei vertici
+			vec3i* indices;        // Indici dei triangoli
+			uint32_t numTriangles; // Numero di triangoli
 		} ium;
 
 		OptixTraversableHandle traversable;
