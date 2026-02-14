@@ -53,8 +53,7 @@ protected:
     void createContext();
     void createModule();
 
-    void createPipeline();
-    void buildSBT();
+    
 
 
 public:
@@ -77,6 +76,9 @@ public:
         createContext();
         createModule();
     }
+
+    void createPipeline();
+    void buildSBT();
 
    
 };

@@ -242,7 +242,7 @@ void OptixManager::render(int launchWidth, int launchHeight)
     if(launchWidth == 0 || launchHeight == 0)
 		return;
 
-
+    launchParamsBuffer.resize(sizeof(launchParams));
     launchParamsBuffer.upload(&launchParams, 1);
 
     OPTIX_CHECK(optixLaunch(/*! pipeline we're launching launch: */

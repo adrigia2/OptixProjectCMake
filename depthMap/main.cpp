@@ -212,7 +212,10 @@ namespace osc {
 	  iumGenerator.setTextureSize(512, 512); // Imposta la dimensione della texture per la depth map
 	  iumGenerator.printStatus();
 	  optixManager.printStatus();
-	  
+
+	  optixManager.createPipeline();
+	  optixManager.buildSBT();
+
 	  LogManager::LogInfo("Starting rendering...");
       iumGenerator.render();
 
