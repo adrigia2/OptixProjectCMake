@@ -26,7 +26,6 @@ Camera.h
 optix7.h
 CUDABuffer.h
 LaunchParams.h
-#SampleRenderer.h
 TransformReader.h
 LogManager.h
 LogManager.cpp
@@ -34,39 +33,62 @@ IOManager.h
 IOManager.cpp
 OptixManager.h
 OptixManager.cpp
-#SampleRenderer.cpp
 TriangleMesh.h
 TriangleMesh.cpp
 main.cpp
 ImageResultType.h
- "IUM_Generator.h" "IUM_Generator.cpp"  "Depth_Generator.h" "Depth_Generator.cpp")
-
-pybind11_add_module(depthMapModule
-  ${embedded_ptx_code}
-  #pybind11_wrapper.cpp
-  #SampleRenderer.cpp
-  #SampleRenderer.h
-  CUDABuffer.h
-  #LaunchParams.h
-  #optix7.h
-  #TransformReader.h
-)
+IUM_Generator.h
+IUM_Generator.cpp
+Depth_Generator.h
+Depth_Generator.cpp)
 
 target_link_libraries(depthMap
   gdt
-  # glfw and opengl, for display
   glfWindow
   ${OPENGL_gl_LIBRARY}
   OpenEXR::OpenEXR
 )
 
+pybind11_add_module(depthMapModule
+  ${embedded_ptx_code}
+  pybind11_wrapper.cpp
+  
+  # Core classes
+  OptixManager.cpp
+  OptixManager.h
+  IUM_Generator.cpp
+  IUM_Generator.h
+  Depth_Generator.cpp
+  Depth_Generator.h
+  TriangleMesh.cpp
+  TriangleMesh.h
+  
+  # Utility classes
+  LogManager.cpp
+  LogManager.h
+  IOManager.cpp
+  IOManager.h
+  
+  # Headers
+  Camera.h
+  CUDABuffer.h
+  LaunchParams.h
+  optix7.h
+  ImageResultType.h
+  TransformReader.h
+)
+
 target_link_libraries(depthMapModule PRIVATE
   gdt
+  glfWindow
   ${CUDA_LIBRARIES}
   ${OptiX_LIBRARY}
+  ${OPENGL_gl_LIBRARY}
+  OpenEXR::OpenEXR
 )
 
 target_include_directories(depthMapModule PRIVATE
   ${OptiX_INCLUDE}
   ${CUDA_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}
 )
