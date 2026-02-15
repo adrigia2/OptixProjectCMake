@@ -71,6 +71,12 @@ namespace osc {
 			LogManager::LogInfo("Done! Check ium_output.bmp for results.");
 		}
 
+		if (type == ImageResultType::OpenEXR)
+		{
+			iumGenerator.saveIUMTextureToOpenExr(outputPath + fileName + ".exr");
+			LogManager::LogInfo("Done! Check ium_output.exr for results.");
+		}
+
 	}
 
 	extern "C" void createDepthMaps(const std::string& transformFile, const std::string& outputDir, const ImageResultType& type)
@@ -96,6 +102,13 @@ namespace osc {
 			LogManager::LogInfo("Saving depth maps to bitmap...");
 			depthGenerator.saveIUMTextureToBitmapAll(outputDir);
 			LogManager::LogInfo("Done! Check the output directory for depth maps.");
+		}
+
+		if (type == ImageResultType::OpenEXR)
+		{
+			LogManager::LogInfo("Saving depth maps to OpenEXR...");
+			depthGenerator.saveDepthMapsToOpenExrAll(outputDir);
+			LogManager::LogInfo("Done! Check the output directory for depth maps in OpenEXR format.");
 		}
 
 
@@ -191,13 +204,13 @@ namespace osc {
 		createIUM(
 			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/InverseUvMapping/", 
 			"ium_output",
-			ImageResultType::BMP
+			ImageResultType::OpenEXR
 		);
 		createDepthMaps
 		(
 			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Nerf/transforms.json", 
 			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Depth/",
-			ImageResultType::BMP
+			ImageResultType::OpenEXR
 		);
 	}
 

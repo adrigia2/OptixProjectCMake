@@ -23,6 +23,7 @@ public:
 	void render();
 
 	void saveIUMTextureToBitmapAll(const std::string& outDir);
+	void saveDepthMapsToOpenExrAll(const std::string& outDir);
 
 	
 	Depth_Generator(OptixManager& optixManager)
@@ -57,6 +58,7 @@ private:
 	OptixManager& optixManager;
 	void setCamera(const Camera& camera, float fovY);
 	void saveIUMTextureToBitmap(const std::string& outDir, FrameResult& frame);
+	void saveDepthMapToOpenExr(const std::string& outDir, FrameResult& frame);
 
 	std::vector<FrameResult> frameResults; // Per memorizzare i risultati di ogni frame
 };

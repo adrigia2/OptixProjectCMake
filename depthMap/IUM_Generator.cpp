@@ -3,6 +3,9 @@
 #include <fstream>
 #include <algorithm>
 #include <limits>
+#include <OpenEXR/ImfRgbaFile.h>
+#include <OpenEXR/ImfRgba.h>
+#include <OpenEXR/ImfArray.h>
 
 // Struttura header BMP
 #pragma pack(push, 1)
@@ -422,6 +425,53 @@ OptixTraversableHandle IUM_Generator::buildAccel(const TriangleMesh &model)
 
     return asHandle;
 
+}
+
+void IUM_Generator::saveIUMTextureToOpenExr(const std::string& filename)
+{
+    auto& launchParams = optixManager.getLaunchParams();
+    const uint32_t width = launchParams.ium.size.width;
+    const uint32_t height = launchParams.ium.size.height;
+    
+    if (width == 0 || height == 0) {
+        LogManager::LogError("Cannot save IUM texture: invalid size %u x %u", width, height);
+        return;
+    }
+    
+    auto& positions = result.positions;
+    auto& masks = result.masks;
+    
+    LogManager::LogInfo("Downloaded %u pixels from GPU", width * height);
+    
+    try {
+        // Crea un array di pixel RGBA per OpenEXR
+        Imf::Array2D<Imf::Rgba> pixels(height, width);
+        
+        // Riempi l'array di pixel con i valori grezzi
+        for (uint32_t y = 0; y < height; y++) {
+            for (uint32_t x = 0; x < width; x++) {
+                const uint32_t idx = x + y * width;
+                
+                // Scrivi direttamente i valori grezzi delle posizioni
+                pixels[y][x].r = positions[idx].x;
+                pixels[y][x].g = positions[idx].y;
+                pixels[y][x].b = positions[idx].z;
+                // Salva la mask nel canale alpha (convertito da uint8_t a float)
+                pixels[y][x].a = static_cast<float>(masks[idx]);
+            }
+        }
+        
+        // Scrivi il file OpenEXR
+        Imf::RgbaOutputFile file(filename.c_str(), width, height, Imf::WRITE_RGBA);
+        file.setFrameBuffer(&pixels[0][0], 1, width);
+        file.writePixels(height);
+        
+        LogManager::LogInfo("IUM texture saved to OpenEXR: %s (%u x %u pixels)", 
+                           filename.c_str(), width, height);
+    }
+    catch (const std::exception& e) {
+        LogManager::LogError("Failed to save IUM texture to OpenEXR: %s", e.what());
+    }
 }
 
 

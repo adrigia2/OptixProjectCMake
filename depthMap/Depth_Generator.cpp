@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <OpenEXR/ImfOutputFile.h>
+#include <OpenEXR/ImfInputFile.h>
+#include <OpenEXR/ImfChannelList.h>
+#include <OpenEXR/ImfFrameBuffer.h>
+#include <OpenEXR/ImfHeader.h>
 
 void Depth_Generator::createRaygenPrograms()
 {
@@ -311,6 +316,50 @@ void Depth_Generator::render()
     optixManager.render(launchParams.depth.frame.size.x, launchParams.depth.frame.size.y);
 }
 
+void Depth_Generator::saveDepthMapToOpenExr(const std::string& outDir, FrameResult& frame)
+{
+    LaunchParams& launchParams = optixManager.getLaunchParams();
+    const uint32_t width = launchParams.depth.frame.size.x;
+    const uint32_t height = launchParams.depth.frame.size.y;
+
+    if (width == 0 || height == 0) {
+        LogManager::LogError("Cannot save depth map: invalid size %u x %u", width, height);
+        return;
+    }
+
+    auto& depths = frame.depthData;
+    auto& fileName = frame.depthFileName;
+
+    LogManager::LogInfo("Saving %u depth values to OpenEXR", width * height);
+
+    try {
+        // Crea l'header con un singolo canale float "Z"
+        Imf::Header header(width, height);
+        header.channels().insert("Z", Imf::Channel(Imf::FLOAT));
+
+        // Crea il file di output
+        const std::string fullPath = outDir + "/" + fileName + ".exr";
+        Imf::OutputFile file(fullPath.c_str(), header);
+
+        // Prepara il frame buffer
+        Imf::FrameBuffer frameBuffer;
+        frameBuffer.insert("Z",
+            Imf::Slice(Imf::FLOAT,
+                (char*)depths.data(),
+                sizeof(float),      // xStride: distanza tra pixel sulla stessa riga
+                sizeof(float) * width)); // yStride: distanza tra righe
+
+        file.setFrameBuffer(frameBuffer);
+        file.writePixels(height);
+
+        LogManager::LogInfo("Depth map saved to OpenEXR: %s (%u x %u pixels)",
+            fullPath.c_str(), width, height);
+    }
+    catch (const std::exception& e) {
+        LogManager::LogError("Failed to save depth map to OpenEXR: %s", e.what());
+    }
+}
+
 void Depth_Generator::saveIUMTextureToBitmapAll(const std::string& outDir)
 {
     if(frameResults.empty()) {
@@ -323,6 +372,19 @@ void Depth_Generator::saveIUMTextureToBitmapAll(const std::string& outDir)
         LogManager::LogInfo("Saving depth map to: %s", depthFilename.c_str());
         saveIUMTextureToBitmap(outDir, frameResult);
 	}
+}
+
+void Depth_Generator::saveDepthMapsToOpenExrAll(const std::string& outDir)
+{
+    if (frameResults.empty()) {
+        LogManager::LogWarning("No frames rendered, skipping saving depth maps.");
+        return;
+    }
+
+    for (auto& frameResult : frameResults) {
+        LogManager::LogInfo("Saving depth map to OpenEXR: %s", frameResult.depthFileName.c_str());
+        saveDepthMapToOpenExr(outDir, frameResult);
+    }
 }
 
 OptixTraversableHandle Depth_Generator::buildAccel(const TriangleMesh& model)

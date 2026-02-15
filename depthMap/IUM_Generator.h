@@ -38,6 +38,9 @@ public:
 	// Salva la texture IUM in un file bitmap
 	void saveIUMTextureToBitmap(const std::string& filename);
 	
+	// Salva la texture IUM in un file OpenEXR
+	void saveIUMTextureToOpenExr(const std::string& filename);
+	
 protected:
 	std::vector<OptixProgramGroup> raygenPGs;
 	std::vector<OptixProgramGroup> missPGs;
