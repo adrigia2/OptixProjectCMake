@@ -64,6 +64,7 @@ include_directories(common)
 add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
 add_subdirectory(common/pybind11)
 
+find_package(OpenEXR CONFIG REQUIRED)
 
 #add_subdirectory(ExecutableProject)
 #add_subdirectory(example03_inGLFWindow)

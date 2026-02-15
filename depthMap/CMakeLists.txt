@@ -57,6 +57,7 @@ target_link_libraries(depthMap
   # glfw and opengl, for display
   glfWindow
   ${OPENGL_gl_LIBRARY}
+  OpenEXR::OpenEXR
 )
 
 target_link_libraries(depthMapModule PRIVATE
