@@ -19,6 +19,7 @@
 // our own classes, partly shared between host and device
 #include "CUDABuffer.h"
 #include "LaunchParams.h"
+#include "Camera.h"
 #include "gdt/math/AffineSpace.h"
 #include "TriangleMesh.h"
 
@@ -27,15 +28,6 @@
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
 
-  struct Camera {
-    /*! camera position - *from* where we are looking */
-    vec3f pos;
-    /*! which point we are looking *at* */
-    vec3f forward;
-    /*! general up-vector */
-    vec3f up;
-  };
-  
   /*! a simple indexed triangle mesh that our sample renderer will
       render */
 

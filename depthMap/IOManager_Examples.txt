@@ -1,0 +1,138 @@
+// ======================================================================== //
+// IOManager Usage Examples                                                //
+// ======================================================================== //
+
+/*
+
+# IOManager - Binary File I/O Utility Class
+
+## Purpose
+IOManager provides a clean, reusable interface for binary file operations with
+built-in error handling and logging integration.
+
+## Key Features
+- Simple API for saving/loading binary data
+- Automatic error reporting via LogManager
+- Support for raw pointers and STL vectors
+- File existence and size checking
+- Directory creation utilities
+
+## Usage Examples
+
+### 1. Save Binary Data from Raw Pointer
+
+```cpp
+std::vector<float> depthData(1024);
+// ... fill depthData ...
+
+auto result = IOManager::saveBinaryFile("output.bin", 
+                                       depthData.data(), 
+                                       depthData.size() * sizeof(float));
+
+if (result.success) {
+    std::cout << "Saved " << result.bytesWritten << " bytes" << std::endl;
+} else {
+    std::cout << "Error: " << result.errorMessage << std::endl;
+}
+```
+
+### 2. Save Binary Data from Vector (Template)
+
+```cpp
+std::vector<vec3f> positions(512 * 512);
+// ... fill positions ...
+
+auto result = IOManager::saveBinaryFile("positions.bin", positions);
+
+if (!result.success) {
+    LogManager::LogError("Failed to save: %s", result.errorMessage.c_str());
+}
+```
+
+### 3. Load Binary Data into Vector
+
+```cpp
+std::vector<float> loadedData;
+
+auto result = IOManager::loadBinaryFile("input.bin", loadedData);
+
+if (result.success) {
+    std::cout << "Loaded " << loadedData.size() << " elements" << std::endl;
+}
+```
+
+### 4. Check File Existence Before Operations
+
+```cpp
+if (IOManager::fileExists("config.bin")) {
+    long long size = IOManager::getFileSize("config.bin");
+    std::cout << "File size: " << size << " bytes" << std::endl;
+}
+```
+
+### 5. Create Output Directory
+
+```cpp
+if (IOManager::createDirectory("./output")) {
+    IOManager::saveBinaryFile("./output/data.bin", myData);
+}
+```
+
+### 6. Complete Workflow Example
+
+```cpp
+// Save depth maps with error checking
+void saveDepthMap(const std::vector<float>& depths, const std::string& filename) {
+    // Create output directory if needed
+    if (!IOManager::createDirectory("./depth_maps")) {
+        LogManager::LogError("Failed to create output directory");
+        return;
+    }
+    
+    // Save the file
+    std::string fullPath = "./depth_maps/" + filename;
+    auto result = IOManager::saveBinaryFile(fullPath, depths);
+    
+    if (result.success) {
+        LogManager::LogInfo("Depth map saved: %zu bytes", result.bytesWritten);
+    } else {
+        LogManager::LogError("Save failed: %s", result.errorMessage.c_str());
+    }
+}
+```
+
+## Integration with IUM_Generator
+
+The IOManager is now integrated into IUM_Generator for saving BMP files:
+
+```cpp
+void IUM_Generator::saveIUMTextureToBitmap(const std::string& filename) {
+    // ... prepare BMP data ...
+    
+    std::vector<uint8_t> fileData;
+    // ... build complete BMP file in memory ...
+    
+    // Save using IOManager
+    auto result = IOManager::saveBinaryFile(filename, fileData);
+    
+    if (!result.success) {
+        LogManager::LogError("Failed to save: %s", result.errorMessage.c_str());
+    }
+}
+```
+
+## Error Handling
+
+IOManager returns an IOResult structure that contains:
+- `success`: boolean indicating if operation succeeded
+- `errorMessage`: descriptive error message if failed
+- `bytesWritten`: number of bytes written (for save operations)
+
+Always check the `success` flag before proceeding with operations.
+
+## Thread Safety
+
+IOManager is a static utility class. File operations are NOT thread-safe.
+Ensure proper synchronization if accessing the same file from multiple threads.
+
+*/

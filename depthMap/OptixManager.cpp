@@ -249,6 +249,7 @@ void OptixManager::render(int launchWidth, int launchHeight)
 {
     if(launchWidth == 0 || launchHeight == 0)
 		return;
+	LogManager::LogInfo("Launching Optix with dimensions: %u x %u", launchWidth, launchHeight);
 
     launchParamsBuffer.resize(sizeof(launchParams));
     launchParamsBuffer.upload(&launchParams, 1);

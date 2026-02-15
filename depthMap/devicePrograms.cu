@@ -182,7 +182,7 @@ namespace osc {
 
 		// and write to frame buffer ...
 		const uint32_t fbIndex = ix + iy * optixLaunchParams.depth.frame.size.x;
-		optixLaunchParams.depth.frame.colorBuffer[fbIndex] = rgba;
+		//optixLaunchParams.depth.frame.colorBuffer[fbIndex] = rgba;
 
 		// Scrivi anche la depth se il buffer è disponibile
 		if (optixLaunchParams.depth.frame.depthBuffer) {

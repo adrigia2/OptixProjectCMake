@@ -27,8 +27,7 @@ namespace osc {
 		struct depth
 		{
 			struct {
-				uint32_t* colorBuffer = nullptr;
-				float* depthBuffer = nullptr;
+				float* depthBuffer;
 				vec2i     size;
 			} frame;
 

@@ -21,21 +21,24 @@ include_directories(${OptiX_INCLUDE})
 cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
 
 add_executable(depthMap
-  ${embedded_ptx_code}
-  optix7.h
-  CUDABuffer.h
-  LaunchParams.h
-  #SampleRenderer.h
-  TransformReader.h
-  LogManager.h
-  LogManager.cpp
-  OptixManager.h
-  OptixManager.cpp
-  #SampleRenderer.cpp
-  TriangleMesh.h
-  TriangleMesh.cpp
-  main.cpp
-   "IUM_Generator.h" "IUM_Generator.cpp" )
+${embedded_ptx_code}
+optix7.h
+CUDABuffer.h
+LaunchParams.h
+#SampleRenderer.h
+TransformReader.h
+LogManager.h
+LogManager.cpp
+IOManager.h
+IOManager.cpp
+OptixManager.h
+OptixManager.cpp
+#SampleRenderer.cpp
+TriangleMesh.h
+TriangleMesh.cpp
+main.cpp
+Camera.h
+ "IUM_Generator.h" "IUM_Generator.cpp"  "Depth_Generator.h" "Depth_Generator.cpp")
 
 pybind11_add_module(depthMapModule
   ${embedded_ptx_code}

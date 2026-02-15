@@ -1,6 +1,33 @@
 #include "IUM_Generator.h"
+#include "IOManager.h"
+#include <fstream>
+#include <algorithm>
+#include <limits>
 
+// Struttura header BMP
+#pragma pack(push, 1)
+struct BMPHeader {
+    uint16_t fileType{ 0x4D42 };     // "BM"
+    uint32_t fileSize{ 0 };
+    uint16_t reserved1{ 0 };
+    uint16_t reserved2{ 0 };
+    uint32_t offsetData{ 54 };       // Offset dove iniziano i dati pixel
+};
 
+struct BMPInfoHeader {
+    uint32_t size{ 40 };             // Dimensione di questo header
+    int32_t  width{ 0 };
+    int32_t  height{ 0 };
+    uint16_t planes{ 1 };
+    uint16_t bitCount{ 24 };         // 24 bit per pixel (RGB)
+    uint32_t compression{ 0 };       // Nessuna compressione
+    uint32_t sizeImage{ 0 };
+    int32_t  xPixelsPerMeter{ 0 };
+    int32_t  yPixelsPerMeter{ 0 };
+    uint32_t colorsUsed{ 0 };
+    uint32_t colorsImportant{ 0 };
+};
+#pragma pack(pop)
 
 void IUM_Generator::createRaygenPrograms()
 {
@@ -141,6 +168,125 @@ void IUM_Generator::printStatus()
     LogManager::LogDebug("  Acceleration structure buffer size: %zu bytes", asBuffer.sizeInBytes);
     LogManager::LogDebug("  Positions buffer size: %zu bytes", positionsBuffer.sizeInBytes);
     LogManager::LogDebug("  Masks buffer size: %zu bytes", masksBuffer.sizeInBytes);
+}
+
+void IUM_Generator::saveIUMTextureToBitmap(const std::string& filename)
+{
+    auto& launchParams = optixManager.getLaunchParams();
+    const uint32_t width = launchParams.ium.size.width;
+    const uint32_t height = launchParams.ium.size.height;
+    
+    if (width == 0 || height == 0) {
+        LogManager::LogError("Cannot save IUM texture: invalid size %u x %u", width, height);
+        return;
+    }
+    
+    // Scarica i dati dalla GPU
+    std::vector<vec3f> positions(width * height);
+    std::vector<uint8_t> masks(width * height);
+    
+    positionsBuffer.download(positions.data(), width * height);
+    masksBuffer.download(masks.data(), width * height);
+    
+    LogManager::LogInfo("Downloaded %u pixels from GPU", width * height);
+    
+    // Trova i limiti delle posizioni per normalizzarle
+    vec3f minPos(std::numeric_limits<float>::max());
+    vec3f maxPos(std::numeric_limits<float>::lowest());
+    
+    for (uint32_t i = 0; i < width * height; i++) {
+        if (masks[i] == 1) {  // Solo pixel validi
+            const vec3f& pos = positions[i];
+            minPos.x = std::min(minPos.x, pos.x);
+            minPos.y = std::min(minPos.y, pos.y);
+            minPos.z = std::min(minPos.z, pos.z);
+            maxPos.x = std::max(maxPos.x, pos.x);
+            maxPos.y = std::max(maxPos.y, pos.y);
+            maxPos.z = std::max(maxPos.z, pos.z);
+        }
+    }
+    
+    vec3f range = maxPos - minPos;
+    LogManager::LogInfo("Position range: min=(%.3f, %.3f, %.3f), max=(%.3f, %.3f, %.3f)",
+                        minPos.x, minPos.y, minPos.z, maxPos.x, maxPos.y, maxPos.z);
+    
+    // Prepara i dati RGB per BMP (24 bit per pixel)
+    std::vector<uint8_t> pixels(width * height * 3);
+    
+    for (uint32_t y = 0; y < height; y++) {
+        for (uint32_t x = 0; x < width; x++) {
+            const uint32_t srcIdx = x + y * width;
+            // BMP è bottom-up, ma scriviamo riga per riga quindi non invertiamo qui
+            const uint32_t dstIdx = (x + y * width) * 3;
+            
+            if (masks[srcIdx] == 1) {
+                // Normalizza la posizione in [0, 1]
+                vec3f normalizedPos;
+                if (range.x > 1e-6f) normalizedPos.x = (positions[srcIdx].x - minPos.x) / range.x;
+                else normalizedPos.x = 0.5f;
+                
+                if (range.y > 1e-6f) normalizedPos.y = (positions[srcIdx].y - minPos.y) / range.y;
+                else normalizedPos.y = 0.5f;
+                
+                if (range.z > 1e-6f) normalizedPos.z = (positions[srcIdx].z - minPos.z) / range.z;
+                else normalizedPos.z = 0.5f;
+                
+                // Converti in RGB (0-255)
+                pixels[dstIdx + 2] = static_cast<uint8_t>(normalizedPos.x * 255.0f);  // R
+                pixels[dstIdx + 1] = static_cast<uint8_t>(normalizedPos.y * 255.0f);  // G
+                pixels[dstIdx + 0] = static_cast<uint8_t>(normalizedPos.z * 255.0f);  // B
+            } else {
+                // Pixel non valido: nero
+                pixels[dstIdx + 0] = 0;
+                pixels[dstIdx + 1] = 0;
+                pixels[dstIdx + 2] = 0;
+            }
+        }
+    }
+    
+    // Calcola padding per allineamento a 4 byte
+    const uint32_t rowSize = ((width * 3 + 3) / 4) * 4;
+    const uint32_t paddingSize = rowSize - width * 3;
+    
+    // Prepara header BMP
+    BMPHeader fileHeader;
+    fileHeader.fileSize = 54 + rowSize * height;
+    
+    BMPInfoHeader infoHeader;
+    infoHeader.width = width;
+    infoHeader.height = height;
+    infoHeader.sizeImage = rowSize * height;
+    
+    // Costruisci il buffer completo: header + infoHeader + pixel data
+    std::vector<uint8_t> fileData;
+    fileData.reserve(54 + rowSize * height);
+    
+    // Aggiungi gli header
+    const uint8_t* headerPtr = reinterpret_cast<const uint8_t*>(&fileHeader);
+    fileData.insert(fileData.end(), headerPtr, headerPtr + sizeof(fileHeader));
+    
+    const uint8_t* infoHeaderPtr = reinterpret_cast<const uint8_t*>(&infoHeader);
+    fileData.insert(fileData.end(), infoHeaderPtr, infoHeaderPtr + sizeof(infoHeader));
+    
+    // Aggiungi i dati pixel con padding (dal basso verso l'alto per il formato BMP)
+    std::vector<uint8_t> padding(paddingSize, 0);
+    for (int32_t y = height - 1; y >= 0; y--) {
+        const uint8_t* rowPtr = &pixels[y * width * 3];
+        fileData.insert(fileData.end(), rowPtr, rowPtr + width * 3);
+        if (paddingSize > 0) {
+            fileData.insert(fileData.end(), padding.begin(), padding.end());
+        }
+    }
+    
+    // Usa IOManager per salvare il file
+    IOManager::IOResult result = IOManager::saveBinaryFile(filename, fileData);
+    
+    if (result.success) {
+        LogManager::LogInfo("IUM texture saved to: %s (%u x %u pixels, %zu bytes)", 
+                           filename.c_str(), width, height, result.bytesWritten);
+    } else {
+        LogManager::LogError("Failed to save IUM texture: %s", result.errorMessage.c_str());
+    }
 }
 
 OptixTraversableHandle IUM_Generator::buildAccel(const TriangleMesh &model)

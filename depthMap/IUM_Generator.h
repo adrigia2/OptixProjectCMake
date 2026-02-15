@@ -6,12 +6,6 @@
 
 using namespace osc;
 
-struct PositionUv {
-	vec3f position;
-	uint1 mask = { 0 };
-};
-
-
 class IUM_Generator
 {
 
@@ -37,6 +31,9 @@ public:
 	void setTextureSize(uint32_t width, uint32_t height);
 	void printStatus();
 	
+	// Salva la texture IUM in un file bitmap
+	void saveIUMTextureToBitmap(const std::string& filename);
+	
 protected:
 	std::vector<OptixProgramGroup> raygenPGs;
 	std::vector<OptixProgramGroup> missPGs;
@@ -48,6 +45,8 @@ protected:
 	CUDABuffer uvVertexBuffer;     // Già esistente - per la GAS in UV space
 	CUDABuffer indexBuffer;        // Già esistente
 	CUDABuffer asBuffer;           // Già esistente
+
+	// result buffers per la raygen program
 	CUDABuffer positionsBuffer;    // Già esistente
 	CUDABuffer masksBuffer;        // Già esistente
 	
