@@ -118,6 +118,19 @@ void IUM_Generator::render()
     }
 
     optixManager.render(launchParams.ium.size.width, launchParams.ium.size.height);
+	// Scarica i risultati dalla GPU
+    std::vector<vec3f> positions(launchParams.ium.size.width * launchParams.ium.size.height);
+    std::vector<uint8_t> masks(launchParams.ium.size.width * launchParams.ium.size.height);
+    
+    positionsBuffer.download(positions.data(), launchParams.ium.size.width * launchParams.ium.size.height);
+    masksBuffer.download(masks.data(), launchParams.ium.size.width * launchParams.ium.size.height);
+    
+    // Salva i risultati nella struttura result
+    result.positions = std::move(positions);
+    result.masks = std::move(masks);
+    
+    LogManager::LogInfo("IUM generation completed: %u pixels processed", 
+		launchParams.ium.size.width * launchParams.ium.size.height);
 }
 
 void IUM_Generator::setTraversable(TriangleMesh& model)
@@ -181,12 +194,9 @@ void IUM_Generator::saveIUMTextureToBitmap(const std::string& filename)
         return;
     }
     
-    // Scarica i dati dalla GPU
-    std::vector<vec3f> positions(width * height);
-    std::vector<uint8_t> masks(width * height);
+	auto& positions = result.positions;
+	auto& masks = result.masks;
     
-    positionsBuffer.download(positions.data(), width * height);
-    masksBuffer.download(masks.data(), width * height);
     
     LogManager::LogInfo("Downloaded %u pixels from GPU", width * height);
     

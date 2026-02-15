@@ -22,6 +22,7 @@ cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
 
 add_executable(depthMap
 ${embedded_ptx_code}
+Camera.h
 optix7.h
 CUDABuffer.h
 LaunchParams.h
@@ -37,7 +38,6 @@ OptixManager.cpp
 TriangleMesh.h
 TriangleMesh.cpp
 main.cpp
-Camera.h,
 ImageResultType.h
  "IUM_Generator.h" "IUM_Generator.cpp"  "Depth_Generator.h" "Depth_Generator.cpp")
 

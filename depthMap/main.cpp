@@ -67,7 +67,7 @@ namespace osc {
 
 		if (type == ImageResultType::BMP)
 		{
-			iumGenerator.saveIUMTextureToBitmap(outputPath + "/" + fileName + ".bmp");
+			iumGenerator.saveIUMTextureToBitmap(outputPath + fileName + ".bmp");
 			LogManager::LogInfo("Done! Check ium_output.bmp for results.");
 		}
 
@@ -189,8 +189,8 @@ namespace osc {
 		loadModel("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
 
 		createIUM(
-			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/", 
-			ium_output, 
+			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/InverseUvMapping/", 
+			"ium_output",
 			ImageResultType::BMP
 		);
 		createDepthMaps

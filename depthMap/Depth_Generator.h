@@ -8,7 +8,7 @@ using namespace osc;
 struct FrameResult {
 	std::vector<float> depthData; // Dati della depth map
 	std::string depthFileName; // Nome del file in cui è salvata la depth map
-}
+};
 	
 
 class Depth_Generator
@@ -56,7 +56,7 @@ protected:
 private:
 	OptixManager& optixManager;
 	void setCamera(const Camera& camera, float fovY);
-	void saveIUMTextureToBitmap(const std::string& filename);
+	void saveIUMTextureToBitmap(const std::string& outDir, FrameResult& frame);
 
 	std::vector<FrameResult> frameResults; // Per memorizzare i risultati di ogni frame
 };

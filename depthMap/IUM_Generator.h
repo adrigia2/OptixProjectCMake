@@ -5,6 +5,10 @@
 
 
 using namespace osc;
+struct IUMResult {
+	std::vector<vec3f> positions; // Posizioni 3D reali dei vertici
+	std::vector<uint8_t> masks;    // Maschere per i pixel validi
+};
 
 class IUM_Generator
 {
@@ -56,6 +60,7 @@ protected:
 
 private:
 	OptixManager& optixManager;
+	IUMResult result; // Per memorizzare i risultati della generazione IUM
 
 	
 };

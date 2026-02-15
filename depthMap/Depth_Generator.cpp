@@ -121,6 +121,150 @@ void Depth_Generator::setCamera(const Camera& camera, float fovY)
     launchParams.depth.camera.vertical = halfHeight * up;
  }
 
+void Depth_Generator::saveIUMTextureToBitmap(const std::string& outDir, FrameResult& frame)
+{
+    LaunchParams& launchParams = optixManager.getLaunchParams();
+    const uint32_t width = launchParams.depth.frame.size.x;
+    const uint32_t height = launchParams.depth.frame.size.y;
+
+    if (width == 0 || height == 0) {
+        LogManager::LogError("Cannot save depth map: invalid size %u x %u", width, height);
+        return;
+    }
+
+    if (!launchParams.depth.frame.depthBuffer) {
+        LogManager::LogError("Cannot save depth map: depth buffer is null");
+        return;
+    }
+
+    // Scarica i dati depth dalla GPU
+	auto& depths = frame.depthData;
+	auto& fileName = frame.depthFileName;
+
+    LogManager::LogInfo("Downloaded %u depth values from GPU", width * height);
+
+    // Trova i valori min/max per la normalizzazione (escludendo valori infiniti)
+    float minDepth = std::numeric_limits<float>::max();
+    float maxDepth = -std::numeric_limits<float>::max();
+
+    for (uint32_t i = 0; i < width * height; i++) {
+        const float depth = depths[i];
+        // Ignora valori infiniti o invalidi (miss rays)
+        if (std::isfinite(depth) && depth < 1e10f) {
+            minDepth = std::min(minDepth, depth);
+            maxDepth = std::max(maxDepth, depth);
+        }
+    }
+
+    LogManager::LogInfo("Depth range: min=%.3f, max=%.3f", minDepth, maxDepth);
+
+    // Prepara i dati RGB per BMP (24 bit per pixel)
+    // Depth viene convertito in scala di grigi
+    std::vector<uint8_t> pixels(width * height * 3);
+
+    const float depthRange = maxDepth - minDepth;
+    const bool hasValidRange = depthRange > 1e-6f;
+
+    for (uint32_t y = 0; y < height; y++) {
+        for (uint32_t x = 0; x < width; x++) {
+            const uint32_t srcIdx = x + y * width;
+            const uint32_t dstIdx = (x + y * width) * 3;
+
+            float depth = depths[srcIdx];
+            uint8_t grayValue;
+
+            // Normalizza depth in [0, 255]
+            if (std::isfinite(depth) && depth < 1e10f && hasValidRange) {
+                // Normalizza in [0, 1] e poi converti in [0, 255]
+                float normalized = (depth - minDepth) / depthRange;
+                // Inverti per far sì che vicino = bianco, lontano = nero
+                normalized = 1.0f - normalized;
+                grayValue = static_cast<uint8_t>(normalized * 255.0f);
+            }
+            else {
+                // Pixel con miss (depth infinito) = nero
+                grayValue = 0;
+            }
+
+            // Grayscale: R = G = B
+            pixels[dstIdx + 0] = grayValue;  // B
+            pixels[dstIdx + 1] = grayValue;  // G
+            pixels[dstIdx + 2] = grayValue;  // R
+        }
+    }
+
+    // Calcola padding per allineamento a 4 byte
+    const uint32_t rowSize = ((width * 3 + 3) / 4) * 4;
+    const uint32_t paddingSize = rowSize - width * 3;
+
+    // Strutture header BMP
+#pragma pack(push, 1)
+    struct BMPHeader {
+        uint16_t fileType{ 0x4D42 };     // "BM"
+        uint32_t fileSize{ 0 };
+        uint16_t reserved1{ 0 };
+        uint16_t reserved2{ 0 };
+        uint32_t offsetData{ 54 };
+    };
+
+    struct BMPInfoHeader {
+        uint32_t size{ 40 };
+        int32_t  width{ 0 };
+        int32_t  height{ 0 };
+        uint16_t planes{ 1 };
+        uint16_t bitCount{ 24 };
+        uint32_t compression{ 0 };
+        uint32_t sizeImage{ 0 };
+        int32_t  xPixelsPerMeter{ 0 };
+        int32_t  yPixelsPerMeter{ 0 };
+        uint32_t colorsUsed{ 0 };
+        uint32_t colorsImportant{ 0 };
+    };
+#pragma pack(pop)
+
+    // Prepara header BMP
+    BMPHeader fileHeader;
+    fileHeader.fileSize = 54 + rowSize * height;
+
+    BMPInfoHeader infoHeader;
+    infoHeader.width = width;
+    infoHeader.height = height;
+    infoHeader.sizeImage = rowSize * height;
+
+    // Costruisci il buffer completo: header + infoHeader + pixel data
+    std::vector<uint8_t> fileData;
+    fileData.reserve(54 + rowSize * height);
+
+    // Aggiungi gli header
+    const uint8_t* headerPtr = reinterpret_cast<const uint8_t*>(&fileHeader);
+    fileData.insert(fileData.end(), headerPtr, headerPtr + sizeof(fileHeader));
+
+    const uint8_t* infoHeaderPtr = reinterpret_cast<const uint8_t*>(&infoHeader);
+    fileData.insert(fileData.end(), infoHeaderPtr, infoHeaderPtr + sizeof(infoHeader));
+
+    // Aggiungi i dati pixel con padding (dal basso verso l'alto per il formato BMP)
+    std::vector<uint8_t> padding(paddingSize, 0);
+    for (int32_t y = height - 1; y >= 0; y--) {
+        const uint8_t* rowPtr = &pixels[y * width * 3];
+        fileData.insert(fileData.end(), rowPtr, rowPtr + width * 3);
+        if (paddingSize > 0) {
+            fileData.insert(fileData.end(), padding.begin(), padding.end());
+        }
+    }
+
+    // Usa IOManager per salvare il file
+	IOManager::IOResult result = IOManager::saveBinaryFile(outDir + fileName + ".bmp"
+        , fileData);
+
+    if (result.success) {
+        LogManager::LogInfo("Depth map saved to: %s (%u x %u pixels, %zu bytes)",
+            fileName.c_str(), width, height, result.bytesWritten);
+    }
+    else {
+        LogManager::LogError("Failed to save depth map: %s", result.errorMessage.c_str());
+    }
+}
+
 
 void Depth_Generator::renderTransforms(const std::string& transformFile, const std::string& outputDir)
 {
@@ -156,7 +300,7 @@ void Depth_Generator::renderTransforms(const std::string& transformFile, const s
 
 		LogManager::LogDebug("Downloading depth buffer for frame %zu: %s", i, depthFilename.c_str());
 		depthBuffer.download(depths.data(), transforms.w * transforms.h);
-		result.push_back({ filename, depths });
+		frameResults.push_back({ depths, depthFilename });
 
     }
 }
@@ -169,158 +313,16 @@ void Depth_Generator::render()
 
 void Depth_Generator::saveIUMTextureToBitmapAll(const std::string& outDir)
 {
-    if(result.empty()) {
+    if(frameResults.empty()) {
         LogManager::LogWarning("No frames rendered, skipping saving depth maps.");
         return;
 	}
 
-    for (const auto& frameResult : result) {
-        const std::string depthFilename = outDir + "/depth_" + frameResult.filename + ".bmp";
+    for (auto& frameResult : frameResults) {
+        const std::string depthFilename = outDir + "/depth_" + frameResult.depthFileName + ".bmp";
         LogManager::LogInfo("Saving depth map to: %s", depthFilename.c_str());
-        saveIUMTextureToBitmap(depthFilename);
+        saveIUMTextureToBitmap(outDir, frameResult);
 	}
-}
-
-
-void Depth_Generator::saveIUMTextureToBitmap(const std::string& filename)
-{
-    LaunchParams& launchParams = optixManager.getLaunchParams();
-    const uint32_t width = launchParams.depth.frame.size.x;
-    const uint32_t height = launchParams.depth.frame.size.y;
-    
-    if (width == 0 || height == 0) {
-        LogManager::LogError("Cannot save depth map: invalid size %u x %u", width, height);
-        return;
-    }
-    
-    if (!launchParams.depth.frame.depthBuffer) {
-        LogManager::LogError("Cannot save depth map: depth buffer is null");
-        return;
-    }
-    
-    // Scarica i dati depth dalla GPU
-    std::vector<float> depths(width * height);
-    depthBuffer.download(depths.data(), width * height);
-    
-    LogManager::LogInfo("Downloaded %u depth values from GPU", width * height);
-    
-    // Trova i valori min/max per la normalizzazione (escludendo valori infiniti)
-    float minDepth = std::numeric_limits<float>::max();
-    float maxDepth = -std::numeric_limits<float>::max();
-    
-    for (uint32_t i = 0; i < width * height; i++) {
-        const float depth = depths[i];
-        // Ignora valori infiniti o invalidi (miss rays)
-        if (std::isfinite(depth) && depth < 1e10f) {
-            minDepth = std::min(minDepth, depth);
-            maxDepth = std::max(maxDepth, depth);
-        }
-    }
-    
-    LogManager::LogInfo("Depth range: min=%.3f, max=%.3f", minDepth, maxDepth);
-    
-    // Prepara i dati RGB per BMP (24 bit per pixel)
-    // Depth viene convertito in scala di grigi
-    std::vector<uint8_t> pixels(width * height * 3);
-    
-    const float depthRange = maxDepth - minDepth;
-    const bool hasValidRange = depthRange > 1e-6f;
-    
-    for (uint32_t y = 0; y < height; y++) {
-        for (uint32_t x = 0; x < width; x++) {
-            const uint32_t srcIdx = x + y * width;
-            const uint32_t dstIdx = (x + y * width) * 3;
-            
-            float depth = depths[srcIdx];
-            uint8_t grayValue;
-            
-            // Normalizza depth in [0, 255]
-            if (std::isfinite(depth) && depth < 1e10f && hasValidRange) {
-                // Normalizza in [0, 1] e poi converti in [0, 255]
-                float normalized = (depth - minDepth) / depthRange;
-                // Inverti per far sì che vicino = bianco, lontano = nero
-                normalized = 1.0f - normalized;
-                grayValue = static_cast<uint8_t>(normalized * 255.0f);
-            } else {
-                // Pixel con miss (depth infinito) = nero
-                grayValue = 0;
-            }
-            
-            // Grayscale: R = G = B
-            pixels[dstIdx + 0] = grayValue;  // B
-            pixels[dstIdx + 1] = grayValue;  // G
-            pixels[dstIdx + 2] = grayValue;  // R
-        }
-    }
-    
-    // Calcola padding per allineamento a 4 byte
-    const uint32_t rowSize = ((width * 3 + 3) / 4) * 4;
-    const uint32_t paddingSize = rowSize - width * 3;
-    
-    // Strutture header BMP
-    #pragma pack(push, 1)
-    struct BMPHeader {
-        uint16_t fileType{ 0x4D42 };     // "BM"
-        uint32_t fileSize{ 0 };
-        uint16_t reserved1{ 0 };
-        uint16_t reserved2{ 0 };
-        uint32_t offsetData{ 54 };
-    };
-    
-    struct BMPInfoHeader {
-        uint32_t size{ 40 };
-        int32_t  width{ 0 };
-        int32_t  height{ 0 };
-        uint16_t planes{ 1 };
-        uint16_t bitCount{ 24 };
-        uint32_t compression{ 0 };
-        uint32_t sizeImage{ 0 };
-        int32_t  xPixelsPerMeter{ 0 };
-        int32_t  yPixelsPerMeter{ 0 };
-        uint32_t colorsUsed{ 0 };
-        uint32_t colorsImportant{ 0 };
-    };
-    #pragma pack(pop)
-    
-    // Prepara header BMP
-    BMPHeader fileHeader;
-    fileHeader.fileSize = 54 + rowSize * height;
-    
-    BMPInfoHeader infoHeader;
-    infoHeader.width = width;
-    infoHeader.height = height;
-    infoHeader.sizeImage = rowSize * height;
-    
-    // Costruisci il buffer completo: header + infoHeader + pixel data
-    std::vector<uint8_t> fileData;
-    fileData.reserve(54 + rowSize * height);
-    
-    // Aggiungi gli header
-    const uint8_t* headerPtr = reinterpret_cast<const uint8_t*>(&fileHeader);
-    fileData.insert(fileData.end(), headerPtr, headerPtr + sizeof(fileHeader));
-    
-    const uint8_t* infoHeaderPtr = reinterpret_cast<const uint8_t*>(&infoHeader);
-    fileData.insert(fileData.end(), infoHeaderPtr, infoHeaderPtr + sizeof(infoHeader));
-    
-    // Aggiungi i dati pixel con padding (dal basso verso l'alto per il formato BMP)
-    std::vector<uint8_t> padding(paddingSize, 0);
-    for (int32_t y = height - 1; y >= 0; y--) {
-        const uint8_t* rowPtr = &pixels[y * width * 3];
-        fileData.insert(fileData.end(), rowPtr, rowPtr + width * 3);
-        if (paddingSize > 0) {
-            fileData.insert(fileData.end(), padding.begin(), padding.end());
-        }
-    }
-    
-    // Usa IOManager per salvare il file
-    IOManager::IOResult result = IOManager::saveBinaryFile(filename, fileData);
-    
-    if (result.success) {
-        LogManager::LogInfo("Depth map saved to: %s (%u x %u pixels, %zu bytes)", 
-                           filename.c_str(), width, height, result.bytesWritten);
-    } else {
-        LogManager::LogError("Failed to save depth map: %s", result.errorMessage.c_str());
-    }
 }
 
 OptixTraversableHandle Depth_Generator::buildAccel(const TriangleMesh& model)
