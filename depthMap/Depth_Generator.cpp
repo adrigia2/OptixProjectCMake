@@ -147,13 +147,17 @@ void Depth_Generator::renderTransforms(const std::string& transformFile, const s
         camera.up = frame.getUp();
 
 		LogManager::LogDebug("Rendering frame %zu: %s", i, filename.c_str());
-		setCamera(camera, transforms.camera_angle_y);
+		setCamera(camera, transforms.camera_angle_x);
 		render();
 
+		std::vector<float> depths(transforms.w * transforms.h);
 		// Salva la depth map come bitmap per debug
-		std::string depthFilename = "depth_" + filename + ".bmp";
-		saveIUMTextureToBitmap(outputDir+depthFilename);
-		LogManager::LogInfo("Saved depth map: %s", depthFilename.c_str());
+		std::string depthFilename = "depth_" + filename;
+
+		LogManager::LogDebug("Downloading depth buffer for frame %zu: %s", i, depthFilename.c_str());
+		depthBuffer.download(depths.data(), transforms.w * transforms.h);
+		result.push_back({ filename, depths });
+
     }
 }
 
@@ -162,6 +166,21 @@ void Depth_Generator::render()
 	LaunchParams& launchParams = optixManager.getLaunchParams();
     optixManager.render(launchParams.depth.frame.size.x, launchParams.depth.frame.size.y);
 }
+
+void Depth_Generator::saveIUMTextureToBitmapAll(const std::string& outDir)
+{
+    if(result.empty()) {
+        LogManager::LogWarning("No frames rendered, skipping saving depth maps.");
+        return;
+	}
+
+    for (const auto& frameResult : result) {
+        const std::string depthFilename = outDir + "/depth_" + frameResult.filename + ".bmp";
+        LogManager::LogInfo("Saving depth map to: %s", depthFilename.c_str());
+        saveIUMTextureToBitmap(depthFilename);
+	}
+}
+
 
 void Depth_Generator::saveIUMTextureToBitmap(const std::string& filename)
 {

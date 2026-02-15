@@ -37,7 +37,8 @@ OptixManager.cpp
 TriangleMesh.h
 TriangleMesh.cpp
 main.cpp
-Camera.h
+Camera.h,
+ImageResultType.h
  "IUM_Generator.h" "IUM_Generator.cpp"  "Depth_Generator.h" "Depth_Generator.cpp")
 
 pybind11_add_module(depthMapModule

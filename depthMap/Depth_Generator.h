@@ -5,6 +5,12 @@
 
 using namespace osc;
 
+struct FrameResult {
+	std::vector<float> depthData; // Dati della depth map
+	std::string depthFileName; // Nome del file in cui è salvata la depth map
+}
+	
+
 class Depth_Generator
 {
 public:
@@ -15,6 +21,9 @@ public:
 	void addProgramsInOptixManager();
 	void renderTransforms(const std::string& transformFile, const std::string& outputDir);
 	void render();
+
+	void saveIUMTextureToBitmapAll(const std::string& outDir);
+
 	
 	Depth_Generator(OptixManager& optixManager)
 		: optixManager(optixManager)
@@ -27,7 +36,6 @@ public:
 
 	void setTraversable(TriangleMesh& model);
 
-	void saveIUMTextureToBitmap(const std::string& filename);
 
 protected:
 	std::vector<OptixProgramGroup> raygenPGs;
@@ -47,6 +55,8 @@ protected:
 
 private:
 	OptixManager& optixManager;
-
 	void setCamera(const Camera& camera, float fovY);
+	void saveIUMTextureToBitmap(const std::string& filename);
+
+	std::vector<FrameResult> frameResults; // Per memorizzare i risultati di ogni frame
 };

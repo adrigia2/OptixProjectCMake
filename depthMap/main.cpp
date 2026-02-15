@@ -20,6 +20,7 @@
 #include "IUM_Generator.h"
 #include "Camera.h"
 #include "LogManager.h"
+#include "ImageResultType.h"
 
 // our helper library for window handling
 #include "glfWindow/GLFWindow.h"
@@ -29,90 +30,16 @@
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
 
-	struct SampleWindow : public GLFCameraWindow
+	TriangleMesh model;
+
+	extern "C" void loadModel(const std::string& modelPath)
 	{
-		SampleWindow(const std::string& title,
-			const TriangleMesh& model,
-			const Camera& camera,
-			const float worldScale)
-			: GLFCameraWindow(title, camera.pos, camera.forward, camera.up, worldScale),
-			sample(model)
-		{
-		}
+		LogManager::LogInfo("Loading 3D model...");
+		model.addFromObjFile(modelPath);
+		LogManager::LogInfo("3D model loaded: %zu vertices, %zu triangles", model.vertex.size(), model.index.size());
+	}
 
-		virtual void render() override
-		{
-			if (cameraFrame.modified) {
-				sample.setCamera(Camera{ cameraFrame.get_position(),
-										 cameraFrame.get_forward(),
-										 cameraFrame.get_up() }, 0.66f);
-				cameraFrame.modified = false;
-			}
-			sample.render();
-		}
-
-		virtual void draw() override
-		{
-			sample.downloadPixels(pixels.data());
-			if (fbTexture == 0)
-				glGenTextures(1, &fbTexture);
-
-			glBindTexture(GL_TEXTURE_2D, fbTexture);
-			GLenum texFormat = GL_RGBA;
-			GLenum texelType = GL_UNSIGNED_BYTE;
-			glTexImage2D(GL_TEXTURE_2D, 0, texFormat, fbSize.x, fbSize.y, 0, GL_RGBA,
-				texelType, pixels.data());
-
-			glDisable(GL_LIGHTING);
-			glColor3f(1, 1, 1);
-
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, fbTexture);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-			glDisable(GL_DEPTH_TEST);
-
-			glViewport(0, 0, fbSize.x, fbSize.y);
-
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			glOrtho(0.f, (float)fbSize.x, 0.f, (float)fbSize.y, -1.f, 1.f);
-
-			glBegin(GL_QUADS);
-			{
-				glTexCoord2f(0.f, 0.f);
-				glVertex3f(0.f, 0.f, 0.f);
-
-				glTexCoord2f(0.f, 1.f);
-				glVertex3f(0.f, (float)fbSize.y, 0.f);
-
-				glTexCoord2f(1.f, 1.f);
-				glVertex3f((float)fbSize.x, (float)fbSize.y, 0.f);
-
-				glTexCoord2f(1.f, 0.f);
-				glVertex3f((float)fbSize.x, 0.f, 0.f);
-			}
-			glEnd();
-		}
-
-		virtual void resize(const vec2i& newSize)
-		{
-			fbSize = newSize;
-			sample.resize(newSize);
-			pixels.resize(newSize.x * newSize.y);
-		}
-
-		vec2i                 fbSize;
-		GLuint                fbTexture{ 0 };
-		SampleRenderer        sample;
-		std::vector<uint32_t> pixels;
-	};
-
-	extern "C" void createIUM(const std::string& modelPath, const std::string& outputPath)
+	extern "C" void createIUM(const std::string& outputPath, const std::string& fileName, const ImageResultType& type)
 	{
 		LogManager::LogInfo("Creating OptixManager...");
 		OptixManager optixManager;
@@ -121,11 +48,6 @@ namespace osc {
 		LogManager::LogInfo("Creating IUM_Generator...");
 		IUM_Generator iumGenerator(optixManager);
 		LogManager::LogInfo("IUM_Generator created successfully.");
-
-		LogManager::LogInfo("Loading 3D model...");
-		TriangleMesh model;
-		model.addFromObjFile(modelPath);
-		LogManager::LogInfo("3D model loaded: %zu vertices, %zu triangles", model.vertex.size(), model.index.size());
 
 		LogManager::LogInfo("Setting up IUM_Generator...");
 		iumGenerator.setTraversable(model);
@@ -142,11 +64,16 @@ namespace osc {
 		LogManager::LogInfo("Rendering completed");
 
 		LogManager::LogInfo("Saving IUM texture to bitmap...");
-		iumGenerator.saveIUMTextureToBitmap(outputPath);
-		LogManager::LogInfo("Done! Check ium_output.bmp for results.");
+
+		if (type == ImageResultType::BMP)
+		{
+			iumGenerator.saveIUMTextureToBitmap(outputPath + "/" + fileName + ".bmp");
+			LogManager::LogInfo("Done! Check ium_output.bmp for results.");
+		}
+
 	}
 
-	extern "C" void createDepthMaps(const std::string& modelPath, const std::string& transformFile, const std::string& outputDir)
+	extern "C" void createDepthMaps(const std::string& transformFile, const std::string& outputDir, const ImageResultType& type)
 	{
 		LogManager::LogInfo("Creating OptixManager...");
 		OptixManager optixManager;
@@ -157,19 +84,21 @@ namespace osc {
 		LogManager::LogInfo("Depth_Generator created successfully.");
 
 		LogManager::LogInfo("Creating depth maps from transforms...");
-		
-		// Carica il modello 3D
-		LogManager::LogInfo("Loading 3D model...");
-		TriangleMesh model;
-		model.addFromObjFile(modelPath);
-		LogManager::LogInfo("3D model loaded: %zu vertices, %zu triangles", model.vertex.size(), model.index.size());
 		depthGenerator.setTraversable(model);
 
 		optixManager.createPipeline();
 		optixManager.buildSBT();
 
 		depthGenerator.renderTransforms(transformFile, outputDir);
-		
+
+		if (type == ImageResultType::BMP)
+		{
+			LogManager::LogInfo("Saving depth maps to bitmap...");
+			depthGenerator.saveIUMTextureToBitmapAll(outputDir);
+			LogManager::LogInfo("Done! Check the output directory for depth maps.");
+		}
+
+
 
 	}
 
@@ -257,11 +186,19 @@ namespace osc {
 		// }
 		// return 0;
 
-		createIUM("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj",
-			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/ium_output.bmp");
+		loadModel("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
+
+		createIUM(
+			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/", 
+			ium_output, 
+			ImageResultType::BMP
+		);
 		createDepthMaps
-			("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj",
-				"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Nerf/transforms.json", "C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Depth/");
+		(
+			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Nerf/transforms.json", 
+			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Depth/",
+			ImageResultType::BMP
+		);
 	}
 
 } // ::osc
