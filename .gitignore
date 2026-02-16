@@ -5,6 +5,11 @@ Thumbs.db:encryptable
 ehthumbs.db
 ehthumbs_vista.db
 
+# vcpkg (manifest mode)
+vcpkg_installed/
+# keep vcpkg.json
+# keep vcpkg-configuration.json (usually)
+
 # Dump file
 *.stackdump
 
@@ -1045,3 +1050,4 @@ dkms.conf
 *.dis
 
 !common/**
+!Scenes/**
