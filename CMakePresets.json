@@ -23,7 +23,9 @@
       "generator": "Ninja",
       "inherits": "windows-base",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "C:/Users/adria/Documents/GitHub/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        //"CMAKE_TOOLCHAIN_FILE": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_TOOLCHAIN_FILE": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
       }
 
     },
