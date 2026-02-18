@@ -132,8 +132,8 @@ void OptixManager::createModule()
 
 void OptixManager::cleanup()
 {
-    OPTIX_CHECK(optixPipelineDestroy(pipeline));
-    OPTIX_CHECK(optixModuleDestroy(module));
+    //OPTIX_CHECK(optixPipelineDestroy(pipeline));
+    //OPTIX_CHECK(optixModuleDestroy(module));
 	OPTIX_CHECK(optixDeviceContextDestroy(optixContext));
 	LogManager::LogDebug("Cleaned up Optix");
 }

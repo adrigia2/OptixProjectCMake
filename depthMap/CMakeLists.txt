@@ -1,94 +1,98 @@
-# ======================================================================== #
-# Copyright 2018-2019 Ingo Wald                                            #
-#                                                                          #
-# Licensed under the Apache License, Version 2.0 (the "License");          #
-# you may not use this file except in compliance with the License.         #
-# You may obtain a copy of the License at                                  #
-#                                                                          #
-#     http://www.apache.org/licenses/LICENSE-2.0                           #
-#                                                                          #
-# Unless required by applicable law or agreed to in writing, software      #
-# distributed under the License is distributed on an "AS IS" BASIS,        #
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. #
-# See the License for the specific language governing permissions and      #
-# limitations under the License.                                           #
-# ======================================================================== #
+# depthMap/CMakeLists.txt
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-find_package(OpenGL REQUIRED)
 
-include_directories(${OptiX_INCLUDE})
+# PTX embed: ora il .cu sta in depthMap/cuda/
+cuda_compile_and_embed(embedded_ptx_code
+  ${CMAKE_CURRENT_SOURCE_DIR}/cuda/devicePrograms.cu
+)
 
-cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
-
+# ----- Executable -----
 add_executable(depthMap
-${embedded_ptx_code}
-Camera.h
-optix7.h
-CUDABuffer.h
-LaunchParams.h
-TransformReader.h
-LogManager.h
-LogManager.cpp
-IOManager.h
-IOManager.cpp
-OptixManager.h
-OptixManager.cpp
-TriangleMesh.h
-TriangleMesh.cpp
-main.cpp
-ImageResultType.h
-IUM_Generator.h
-IUM_Generator.cpp
-Depth_Generator.h
-Depth_Generator.cpp)
+  ${embedded_ptx_code}
 
-target_link_libraries(depthMap
+  # src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/LogManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/IOManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/IUM_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Depth_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixActor.cpp
+
+  # headers (opzionale elencarli, ma utile in Visual Studio)
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Camera.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/optix7.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/CUDABuffer.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TransformReader.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LogManager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/IOManager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixManager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TriangleMesh.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/ImageResultType.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/IUM_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Depth_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
+)
+
+target_include_directories(depthMap PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CUDA_INCLUDE_DIRS}
+  ${OptiX_INCLUDE}
+)
+
+target_link_libraries(depthMap PRIVATE
   gdt
   glfWindow
   ${OPENGL_gl_LIBRARY}
   OpenEXR::OpenEXR
+  ${CUDA_LIBRARIES}
+  ${OptiX_LIBRARIES}
+  ${CUDA_LIB}
+  ${GLFW_LIB}
 )
 
+# ----- Pybind module -----
 pybind11_add_module(depthMapModule
   ${embedded_ptx_code}
-  pybind11_wrapper.cpp
-  
-  # Core classes
-  OptixManager.cpp
-  OptixManager.h
-  IUM_Generator.cpp
-  IUM_Generator.h
-  Depth_Generator.cpp
-  Depth_Generator.h
-  TriangleMesh.cpp
-  TriangleMesh.h
-  
-  # Utility classes
-  LogManager.cpp
-  LogManager.h
-  IOManager.cpp
-  IOManager.h
-  
-  # Headers
-  Camera.h
-  CUDABuffer.h
-  LaunchParams.h
-  optix7.h
-  ImageResultType.h
-  TransformReader.h
+
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11_wrapper.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/IUM_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Depth_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/LogManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/IOManager.cpp
+
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixManager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/IUM_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Depth_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TriangleMesh.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LogManager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/IOManager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Camera.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/CUDABuffer.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/optix7.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/ImageResultType.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/TransformReader.h
+)
+
+target_include_directories(depthMapModule PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CUDA_INCLUDE_DIRS}
+  ${OptiX_INCLUDE}
 )
 
 target_link_libraries(depthMapModule PRIVATE
   gdt
   glfWindow
-  ${CUDA_LIBRARIES}
-  ${OptiX_LIBRARY}
   ${OPENGL_gl_LIBRARY}
   OpenEXR::OpenEXR
-)
-
-target_include_directories(depthMapModule PRIVATE
-  ${OptiX_INCLUDE}
-  ${CUDA_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CUDA_LIBRARIES}
+  ${OptiX_LIBRARIES}   # <--- meglio usare questo, non OptiX_LIBRARY singolo
+  ${CUDA_LIB}
+  ${GLFW_LIB}
 )

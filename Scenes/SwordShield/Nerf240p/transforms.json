@@ -11,7 +11,7 @@
     "aabb_scale": 16,
     "frames": [
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Back_1.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Back_1.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -41,7 +41,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Back Right_2.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Back Right_2.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -71,7 +71,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Right_3.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Right_3.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -101,7 +101,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Front Right_4.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Front Right_4.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -131,7 +131,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Front_5.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Front_5.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -161,7 +161,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Front Left_6.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Front Left_6.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -191,7 +191,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Left_7.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Left_7.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -221,7 +221,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Back Left_8.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Back Left_8.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -251,7 +251,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Back_9.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Back_9.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -281,7 +281,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Back Right_10.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Back Right_10.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -311,7 +311,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Right_11.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Right_11.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -341,7 +341,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Front Right_12.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Front Right_12.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -371,7 +371,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Front_13.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Front_13.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -401,7 +401,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Front Left_14.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Front Left_14.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -431,7 +431,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Left_15.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Left_15.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -461,7 +461,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Back Left_16.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top Back Left_16.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [
@@ -491,7 +491,7 @@
             ]
         },
         {
-            "file_path": "C:\\Users\\adria\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top_17.png",
+            "file_path": "C:\\Users\\adriano.cicco\\Documents\\GitHub\\OptixProjectCMake\\Scenes\\SwordShield\\Nerf240p\\clouds-sunshine_2K_09c69240-8e00-4b23-896f-fcde6fd514cc\\images\\render_Camera_Top_17.png",
             "sharpness": 1.0,
             "transform_matrix": [
                 [

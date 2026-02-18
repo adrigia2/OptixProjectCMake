@@ -119,17 +119,17 @@ namespace osc {
 	  world, then exit */
 	extern "C" int main(int ac, char** av)
 	{
-		loadModel("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
+		loadModel("C:/Users/adriano.cicco/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
 
 		createIUM(
-			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/InverseUvMapping/", 
+			"C:/Users/adriano.cicco/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/InverseUvMapping/", 
 			"ium_output",
 			ImageResultType::OpenEXR
 		);
 		createDepthMaps
 		(
-			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Nerf/transforms.json", 
-			"C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Depth/",
+			"C:/Users/adriano.cicco/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Nerf/transforms.json", 
+			"C:/Users/adriano.cicco/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Depth/",
 			ImageResultType::OpenEXR
 		);
 	}
