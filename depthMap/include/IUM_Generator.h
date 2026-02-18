@@ -10,7 +10,7 @@ struct IUMResult {
 	std::vector<uint8_t> masks;    // Maschere per i pixel validi
 };
 
-class IUM_Generator
+class IUM_Generator : public OptixActor
 {
 
 public:
@@ -22,13 +22,11 @@ public:
 	void addProgramsInOptixManager();
 	void render();
 
-	IUM_Generator(OptixManager& optixManager)
-		: optixManager(optixManager)
+	IUM_Generator()
 	{
 		createRaygenPrograms();
 		createMissPrograms();
 		createHitgroupPrograms();
-		addProgramsInOptixManager();
 	}
 
 	void setTraversable(TriangleMesh& model);

@@ -2,63 +2,45 @@
 #include "Camera.h"
 #include "optix7.h"
 #include "LogManager.h"
+#include "LaunchParams_DPN.h"
 
 using namespace osc;
 
-struct FrameResult {
-	std::vector<float> depthData; // Dati della depth map
-	std::string depthFileName; // Nome del file in cui è salvata la depth map
-};
+//struct FrameResult {
+//	std::vector<float> depthData; // Dati della depth map
+//	std::string depthFileName; // Nome del file in cui è salvata la depth map
+//};
 	
-
-class Depth_Generator
+class Depth_Generator : public OptixActor
 {
 public:
 	void createRaygenPrograms();
 	void createMissPrograms();
 	void createHitgroupPrograms();
-
-	void addProgramsInOptixManager();
-	void renderTransforms(const std::string& transformFile, const std::string& outputDir);
 	void render();
 
-	void saveIUMTextureToBitmapAll(const std::string& outDir);
-	void saveDepthMapsToOpenExrAll(const std::string& outDir);
-
-	
-	Depth_Generator(OptixManager& optixManager)
-		: optixManager(optixManager)
+	void needRenderDepth(bool isNeeded);
+	void meedRenderPosition(bool isNeeded);
+	void needRenderNormal(bool isNeeded);
+	Depth_Generator()
 	{
 		createRaygenPrograms();
 		createMissPrograms();
 		createHitgroupPrograms();
-		addProgramsInOptixManager();
 	}
 
-	void setTraversable(TriangleMesh& model);
+	void setTraversable(OptixTraversableHandle& gas);
+	void setCamera(const Camera& camera, float fovY);
 
 
 protected:
-	std::vector<OptixProgramGroup> raygenPGs;
-	std::vector<OptixProgramGroup> missPGs;
-	std::vector<OptixProgramGroup> hitgroupPGs;
-
-	OptixTraversableHandle buildAccel(const TriangleMesh& model);
-
-
-	CUDABuffer vertexBuffer;     
-	CUDABuffer indexBuffer;
-	CUDABuffer asBuffer;          
 
 	// result buffers per la raygen program
     CUDABuffer depthBuffer;  // Aggiunto buffer per depth map
+	CUDABuffer positionBuffer; // Già esistente - per la raygen program
+	CUDABuffer normalBuffer;   // Già esistente - per la raygen program
 
-
+	LaunchParams_DPN launchParams; // Parametri di lancio specifici per depth map
+	CUDABuffer launchParamsBuffer; // Buffer per i parametri di lancio
 private:
-	OptixManager& optixManager;
-	void setCamera(const Camera& camera, float fovY);
-	void saveIUMTextureToBitmap(const std::string& outDir, FrameResult& frame);
-	void saveDepthMapToOpenExr(const std::string& outDir, FrameResult& frame);
-
-	std::vector<FrameResult> frameResults; // Per memorizzare i risultati di ogni frame
 };

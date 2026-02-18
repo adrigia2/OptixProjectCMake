@@ -9,84 +9,49 @@
 using namespace osc;
 
 class OptixManager {
-
 protected:
+    CUcontext          cudaContext{};
+    CUstream           stream{};
+    cudaDeviceProp     deviceProps{};
 
-    /// <summary>
-    /// context of cuda
-    /// </summary>
-    CUcontext          cudaContext;
+    OptixDeviceContext optixContext{};
 
-	// set when the context is created, used for error checking
-    CUstream           stream;
-
-    /// <summary>
-	/// info of the cuda device, e.g. name, memory size, etc.
-    /// </summary>
-    cudaDeviceProp     deviceProps;
-
-
-	////////////////////// optix related members /////////////////////
-    OptixDeviceContext optixContext;
-
-	OptixPipeline               pipeline;
-	OptixPipelineCompileOptions pipelineCompileOptions = {};
-	OptixPipelineLinkOptions    pipelineLinkOptions = {};
-
-	OptixModule                 module;
-	OptixModuleCompileOptions   moduleCompileOptions = {};
-
-    std::vector<OptixProgramGroup> raygenPGs;
-    CUDABuffer raygenRecordsBuffer;
-    std::vector<OptixProgramGroup> missPGs;
-    CUDABuffer missRecordsBuffer;
-    std::vector<OptixProgramGroup> hitgroupPGs;
-    CUDABuffer hitgroupRecordsBuffer;
-    OptixShaderBindingTable sbt = {};
-
-
-	LaunchParams launchParams;
-	CUDABuffer launchParamsBuffer;
-
+    LaunchParams launchParams{};
+    CUDABuffer launchParamsBuffer{};
 
     void initOptix();
     void createContext();
-    void createModule();
 
-    
-
-
-public:
-    void render(int launchWidth, int launchHeight);
-
-
-	void addRaygenProgram(const OptixProgramGroup& program);
-	void addMissProgram(const OptixProgramGroup& program);
-	void addHitgroupProgram(const OptixProgramGroup& program);
-	void printStatus();
-
-    void cleanup();
-
-	OptixModule& getModule() { return module; }
-	OptixDeviceContext& getContext() { return optixContext; }
-	LaunchParams& getLaunchParams() { return launchParams; }
-
-    OptixManager()
-    {
-		launchParams = {};
+    // costruttore privato/protetto: impedisce creazione esterna
+    OptixManager() {
         initOptix();
         createContext();
-        createModule();
     }
 
-	// distructor
-    ~OptixManager()
-    {
+public:
+    // accesso globale all'istanza
+    static OptixManager& instance() {
+        static OptixManager inst;   // creato una sola volta, thread-safe (C++11+)
+        return inst;
+    }
+
+    // vieta copia e assegnazione
+    OptixManager(const OptixManager&) = delete;
+    OptixManager& operator=(const OptixManager&) = delete;
+
+    // opzionale: vieta anche i move
+    OptixManager(OptixManager&&) = delete;
+    OptixManager& operator=(OptixManager&&) = delete;
+
+    void render(int launchWidth, int launchHeight, int launchDepth, CUDABuffer& launchParams, OptixShaderBindingTable& sbt);
+
+    void printStatus();
+    void cleanup();
+
+    OptixDeviceContext& getContext() { return optixContext; }
+    LaunchParams& getLaunchParams() { return launchParams; }
+
+    ~OptixManager() {
         cleanup();
-	}
-
-    void createPipeline();
-    void buildSBT();
-
-   
+    }
 };
