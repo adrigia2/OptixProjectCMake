@@ -4,11 +4,16 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
-#include <OpenEXR/ImfOutputFile.h>
-#include <OpenEXR/ImfInputFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfHeader.h>
+
+/// <summary>
+/// compiled ptx code from the .cu file, embedded as a string literal in the executable.
+/// </summary>
+extern "C" char embedded_ptx_code[];
+
+char* Depth_Generator::getPtxCode()
+{
+    return embedded_ptx_code;
+}
 
 void Depth_Generator::createRaygenPrograms()
 {
@@ -89,7 +94,7 @@ void Depth_Generator::setCamera(const Camera& camera, float fovY, vec2i frameSiz
 {
     launchParams.camera.position = camera.pos;
     launchParams.camera.direction = normalize(camera.forward);
-	launchParams.flags.size = frameSize;
+	launchParams.size = frameSize;
 
     const float aspect = frameSize.x / float(frameSize.y);
 
@@ -99,16 +104,16 @@ void Depth_Generator::setCamera(const Camera& camera, float fovY, vec2i frameSiz
 
     // Build a robust orthonormal basis (right, up, forward)
     // (If your handedness is flipped, swap cross order as noted below.)
-    auto right = cross(launchParams.depth.camera.direction, camera.up);
+    auto right = cross(launchParams.camera.direction, camera.up);
     const float rightLen2 = dot(right, right);
     if (rightLen2 < 1e-12f) {
         // Fallback if up is (almost) parallel to direction
         const auto worldUp = vec3f(0.f, 0.f, 1.f);
-        right = cross(launchParams.depth.camera.direction, worldUp);
+        right = cross(launchParams.camera.direction, worldUp);
     }
     right = normalize(right);
 
-    vec3f up = normalize(cross(right, launchParams.depth.camera.direction));
+    vec3f up = normalize(cross(right, launchParams.camera.direction));
 
     // These represent half-spans of the image plane in world units at z=1
     launchParams.camera.horizontal = halfWidth * right;
@@ -304,10 +309,11 @@ void Depth_Generator::render()
 	//LaunchParams& launchParams = optixManager.getLaunchParams();
 	launchParamsBuffer.upload(&launchParams, sizeof(LaunchParams_DPN));
     OptixManager::instance().render(
-        launchParams.flags.size.x, 
-        launchParams.flags.size.y,
+        launchParams.size.x, 
+        launchParams.size.y,
         1,
-		launchParamsBuffer,
+		pipeline,
+        launchParamsBuffer,
 		sbt);
 }
 
@@ -326,9 +332,10 @@ void Depth_Generator::needRenderNormal(bool isNeeded)
     launchParams.flags.computeNormal = isNeeded;
 }
 
-void Depth_Generator::setTraversable(OptixTraversableHandle& gas)
+void Depth_Generator::setTraversable(const TriangleMesh& model)
 {
-	launchParams.traversable = gas;
+	auto gasHandle = createGAS(model);
+	launchParams.traversable = gasHandle;
 }
 
 //void Depth_Generator::saveDepthMapToOpenExr(const std::string& outDir, FrameResult& frame)

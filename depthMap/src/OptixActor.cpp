@@ -1,4 +1,34 @@
 #include "OptixActor.h"
+#include <OptixManager.h>
+
+/*! SBT record for a raygen program */
+struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) RaygenRecord
+{
+	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+	// just a dummy value - later examples will use more interesting
+	// data here
+	void* data;
+};
+
+/*! SBT record for a miss program */
+struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) MissRecord
+{
+	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+	// just a dummy value - later examples will use more interesting
+	// data here
+	void* data;
+};
+
+/*! SBT record for a hitgroup program */
+struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) HitgroupRecord
+{
+	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+	// just a dummy value - later examples will use more interesting
+	// data here
+	int objectID;
+};
+
+
 
 void OptixActor::createSBT()
 {
@@ -54,7 +84,7 @@ void OptixActor::createSBT()
 
 OptixTraversableHandle OptixActor::createGAS(const TriangleMesh& model)
 {
-	auto& optixContext = optixManager.getContext();
+	auto& optixContext = OptixManager::instance().getContext();
 
 	// upload the model to the device: the builder
 	vertexBuffer.alloc_and_upload(model.vertex);
@@ -107,7 +137,7 @@ OptixTraversableHandle OptixActor::createGAS(const TriangleMesh& model)
 
 	OptixAccelBufferSizes blasBufferSizes;
 	OPTIX_CHECK(optixAccelComputeMemoryUsage
-	(optixContext,
+	(OptixManager::instance().getContext(),
 		&accelOptions,
 		&triangleInput,
 		1,  // num_build_inputs
@@ -135,7 +165,7 @@ OptixTraversableHandle OptixActor::createGAS(const TriangleMesh& model)
 	CUDABuffer outputBuffer;
 	outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
 
-	OPTIX_CHECK(optixAccelBuild(optixContext,
+	OPTIX_CHECK(optixAccelBuild(OptixManager::instance().getContext(),
 		/* stream */0,
 		&accelOptions,
 		&triangleInput,
@@ -159,7 +189,7 @@ OptixTraversableHandle OptixActor::createGAS(const TriangleMesh& model)
 	compactedSizeBuffer.download(&compactedSize, 1);
 
 	asBuffer.alloc(compactedSize);
-	OPTIX_CHECK(optixAccelCompact(optixContext,
+	OPTIX_CHECK(optixAccelCompact(OptixManager::instance().getContext(),
 		/*stream:*/0,
 		asHandle,
 		asBuffer.d_pointer(),
@@ -189,7 +219,7 @@ void OptixActor::createPipeline()
 
 	char log[2048];
 	size_t sizeof_log = sizeof(log);
-	OPTIX_CHECK(optixPipelineCreate(optixContext,
+	OPTIX_CHECK(optixPipelineCreate(OptixManager::instance().getContext(),
 		&pipelineCompileOptions,
 		&pipelineLinkOptions,
 		programGroups.data(),
@@ -237,7 +267,7 @@ void OptixActor::createModule()
 	char log[2048];
 	size_t sizeof_log = sizeof(log);
 #if OPTIX_VERSION >= 70700
-	OPTIX_CHECK(optixModuleCreate(optixContext,
+	OPTIX_CHECK(optixModuleCreate(OptixManager::instance().getContext(),
 		&moduleCompileOptions,
 		&pipelineCompileOptions,
 		ptxCode.c_str(),
@@ -246,7 +276,7 @@ void OptixActor::createModule()
 		&module
 	));
 #else
-	OPTIX_CHECK(optixModuleCreateFromPTX(optixContext,
+	OPTIX_CHECK(optixModuleCreateFromPTX(OptixManager::instance().getContext(),
 		&moduleCompileOptions,
 		&pipelineCompileOptions,
 		ptxCode.c_str(),

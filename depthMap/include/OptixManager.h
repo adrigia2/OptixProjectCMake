@@ -1,9 +1,7 @@
 #pragma once
 
-#include "LaunchParams.h"
 #include "gdt/math/AffineSpace.h"
 #include "objLoader/tiny_obj_loader.h"
-#include "SampleRenderer.h"
 #include "CUDABuffer.h"
 
 using namespace osc;
@@ -15,9 +13,6 @@ protected:
     cudaDeviceProp     deviceProps{};
 
     OptixDeviceContext optixContext{};
-
-    LaunchParams launchParams{};
-    CUDABuffer launchParamsBuffer{};
 
     void initOptix();
     void createContext();
@@ -43,13 +38,12 @@ public:
     OptixManager(OptixManager&&) = delete;
     OptixManager& operator=(OptixManager&&) = delete;
 
-    void render(int launchWidth, int launchHeight, int launchDepth, CUDABuffer& launchParams, OptixShaderBindingTable& sbt);
+    void render(int launchWidth, int launchHeight, int launchDepth, OptixPipeline& pipeline, CUDABuffer& launchParamsBuffer, OptixShaderBindingTable& sbt);
 
     void printStatus();
     void cleanup();
 
     OptixDeviceContext& getContext() { return optixContext; }
-    LaunchParams& getLaunchParams() { return launchParams; }
 
     ~OptixManager() {
         cleanup();

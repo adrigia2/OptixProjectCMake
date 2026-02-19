@@ -2,37 +2,6 @@
 #include "LogManager.h"
 #include <optix_function_table_definition.h>
 
-/// <summary>
-/// compiled ptx code from the .cu file, embedded as a string literal in the executable.
-/// </summary>
-extern "C" char embedded_ptx_code[];
-
-/*! SBT record for a raygen program */
-struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) RaygenRecord
-{
-    __align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-    // just a dummy value - later examples will use more interesting
-    // data here
-    void* data;
-};
-
-/*! SBT record for a miss program */
-struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) MissRecord
-{
-    __align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-    // just a dummy value - later examples will use more interesting
-    // data here
-    void* data;
-};
-
-/*! SBT record for a hitgroup program */
-struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) HitgroupRecord
-{
-    __align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-    // just a dummy value - later examples will use more interesting
-    // data here
-    int objectID;
-};
 
 static void context_log_cb(unsigned int level,
     const char* tag,
@@ -98,7 +67,7 @@ void OptixManager::cleanup()
 }
 
 
-void OptixManager::render(int launchWidth, int launchHeight, int launchDepth, CUDABuffer& launchParams, OptixShaderBindingTable& sbt)
+void OptixManager::render(int launchWidth, int launchHeight, int launchDepth, OptixPipeline& pipeline, CUDABuffer& launchParamsBuffer, OptixShaderBindingTable& sbt)
 {
     if(launchWidth == 0 || launchHeight == 0)
 		return;

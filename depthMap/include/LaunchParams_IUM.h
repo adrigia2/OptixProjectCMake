@@ -21,45 +21,24 @@
 
 namespace osc {
 	using namespace gdt;
-	struct LaunchParams
+	struct LaunchParams_IUM
 	{
-
-		struct depth
-		{
-			struct {
-				float* depthBuffer;
-				vec2i     size;
-			} frame;
-
-			struct {
-				vec3f position;
-				vec3f direction;
-				vec3f horizontal;
-				vec3f vertical;
-			} camera;
-
-		} depth;
-
-		struct ium
-		{
+		struct {
 			// Output buffers
 			vec3f* positions;
 			uint8_t* masks;
-			
-			struct Size {
-				uint32_t width;
-				uint32_t height;
-			} size;
+		} results;
 
-			// Input geometry data per inverse UV mapping
+		vec2i size;
+
+		struct {
 			vec3f* worldVertices;  // Posizioni 3D reali dei vertici
 			vec2f* uvVertices;     // Coordinate UV dei vertici
 			vec3i* indices;        // Indici dei triangoli
 			uint32_t numTriangles; // Numero di triangoli
-		} ium;
+		} data;
 
 		OptixTraversableHandle traversable;
-
 
 	};
 

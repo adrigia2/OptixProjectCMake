@@ -7,9 +7,15 @@ cuda_compile_and_embed(embedded_ptx_code
   ${CMAKE_CURRENT_SOURCE_DIR}/cuda/devicePrograms.cu
 )
 
+# PTX embed: ora il .cu sta in depthMap/cuda/
+cuda_compile_and_embed(embedded_ptx_code_ium
+  ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsIUM.cu
+)
+
 # ----- Executable -----
 add_executable(depthMap
   ${embedded_ptx_code}
+  ${embedded_ptx_code_ium}
 
   # src/
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -25,7 +31,8 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Camera.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/optix7.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/CUDABuffer.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_IUM.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_DPN.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TransformReader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LogManager.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/IOManager.h
@@ -47,7 +54,7 @@ target_link_libraries(depthMap PRIVATE
   gdt
   glfWindow
   ${OPENGL_gl_LIBRARY}
-  OpenEXR::OpenEXR
+  #OpenEXR::OpenEXR
   ${CUDA_LIBRARIES}
   ${OptiX_LIBRARIES}
   ${CUDA_LIB}
@@ -65,6 +72,8 @@ pybind11_add_module(depthMapModule
   ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/LogManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/IOManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixActor.cpp
+
 
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixManager.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/IUM_Generator.h
@@ -74,10 +83,12 @@ pybind11_add_module(depthMapModule
   ${CMAKE_CURRENT_SOURCE_DIR}/include/IOManager.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Camera.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/CUDABuffer.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_IUM.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_DPN.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/optix7.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/ImageResultType.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TransformReader.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
 )
 
 target_include_directories(depthMapModule PRIVATE
@@ -90,7 +101,7 @@ target_link_libraries(depthMapModule PRIVATE
   gdt
   glfWindow
   ${OPENGL_gl_LIBRARY}
-  OpenEXR::OpenEXR
+  #OpenEXR::OpenEXR
   ${CUDA_LIBRARIES}
   ${OptiX_LIBRARIES}   # <--- meglio usare questo, non OptiX_LIBRARY singolo
   ${CUDA_LIB}

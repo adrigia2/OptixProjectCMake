@@ -1,7 +1,10 @@
-#include "SampleRenderer.h"
+#pragma once
 #include "OptixManager.h"
 #include "optix7.h"
 #include "LogManager.h"
+#include "LaunchParams_IUM.h"
+#include <TriangleMesh.h>
+#include "OptixActor.h"
 
 
 using namespace osc;
@@ -15,12 +18,10 @@ class IUM_Generator : public OptixActor
 
 public:
 
-	void createRaygenPrograms();
-	void createMissPrograms();
-	void createHitgroupPrograms();
-
-	void addProgramsInOptixManager();
-	void render();
+	void createRaygenPrograms() override;
+	void createMissPrograms() override;
+	void createHitgroupPrograms() override;
+	char* getPtxCode() override;
 
 	IUM_Generator()
 	{
@@ -29,25 +30,17 @@ public:
 		createHitgroupPrograms();
 	}
 
-	void setTraversable(TriangleMesh& model);
-	void setTextureSize(uint32_t width, uint32_t height);
+	void setTraversable(const TriangleMesh& model) override;
+	OptixTraversableHandle createGAS(const TriangleMesh& model) override;
+	void setTextureSize(vec2i size);
 	void printStatus();
-	
-	// Salva la texture IUM in un file bitmap
-	void saveIUMTextureToBitmap(const std::string& filename);
-	
-	// Salva la texture IUM in un file OpenEXR
-	void saveIUMTextureToOpenExr(const std::string& filename);
+	void render();
 	
 protected:
-	std::vector<OptixProgramGroup> raygenPGs;
-	std::vector<OptixProgramGroup> missPGs;
-	std::vector<OptixProgramGroup> hitgroupPGs;
-
 	OptixTraversableHandle buildAccel(const TriangleMesh& model);
 
 
-	CUDABuffer uvVertexBuffer;     // Già esistente - per la GAS in UV space
+	CUDABuffer vertexBuffer;     // Già esistente - per la GAS in UV space
 	CUDABuffer indexBuffer;        // Già esistente
 	CUDABuffer asBuffer;           // Già esistente
 
@@ -59,8 +52,9 @@ protected:
 	CUDABuffer worldVertexBuffer;  // Vertici 3D reali del modello
 	CUDABuffer uvCoordBuffer;      // Coordinate UV per il dispositivo
 
+	LaunchParams_IUM launchParams; // Parametri di lancio specifici per IUM
+
 private:
-	OptixManager& optixManager;
 	IUMResult result; // Per memorizzare i risultati della generazione IUM
 
 	

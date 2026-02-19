@@ -3,6 +3,7 @@
 #include "optix7.h"
 #include "LogManager.h"
 #include "LaunchParams_DPN.h"
+#include "OptixActor.h"
 
 using namespace osc;
 
@@ -14,24 +15,25 @@ using namespace osc;
 class Depth_Generator : public OptixActor
 {
 public:
-	void createRaygenPrograms();
-	void createMissPrograms();
-	void createHitgroupPrograms();
+	void createRaygenPrograms() override;
+	void createMissPrograms() override;
+	void createHitgroupPrograms() override;
+	char* getPtxCode() override;
 	void render();
 
 	void needRenderDepth(bool isNeeded);
 	void meedRenderPosition(bool isNeeded);
 	void needRenderNormal(bool isNeeded);
+	void setTraversable(const TriangleMesh& model) override;
+
+
 	Depth_Generator()
 	{
 		createRaygenPrograms();
 		createMissPrograms();
 		createHitgroupPrograms();
 	}
-
-	void setTraversable(OptixTraversableHandle& gas);
-	void setCamera(const Camera& camera, float fovY);
-
+	void setCamera(const Camera& camera, float fovY, vec2i frameSize);
 
 protected:
 

@@ -11,8 +11,8 @@ struct LaunchParams_DPN
 		bool computeDepth;
 		bool computePositional;
 		bool computeNormal;
-		vec2i size;
 	} flags;
+	vec2i size; // dimensione del frame da creare (width, height)
 	struct {
 		float* depthBuffer;
 		vec3f* positionalBuffer;
