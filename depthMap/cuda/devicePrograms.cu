@@ -54,8 +54,10 @@ static __forceinline__ __device__ T* getPRD()
 
 // Struttura per payload che include colore e depth
 struct RayPayload {
-	vec3f color;
 	float depth;
+	vec3f position; // Posizione 3D del punto di intersezione
+	vec3f normal;   // Normale 3D al punto di intersezione
+	uint8_t mask;
 };
 
 //------------------------------------------------------------------------------
@@ -77,22 +79,27 @@ extern "C" __global__ void __closesthit__radiance()
 	const vec3f D3 = optixGetWorldRayDirection();
 	const float  t = optixGetRayTmax();
 
-	vec3f P = O3 + t * D3;
 
 	// Calcola la distanza (depth)
-	prd.depth = t;
+	if (optixLaunchParams.flags.computeDepth)
+		prd.depth = t;
 
-	// ---- position -> color mapping ----
-// worldScale controlla quanto "spazio" comprimi in [0,1]
-	const float worldScale = 1.0f;     // prova 1, 5, 10, 50 a seconda della scena
-	vec3f c = (P / worldScale) * 0.5f + vec3f(0.5f);   // [-worldScale, +worldScale] -> [0,1]
+	// calcolo la posizione 3D del punto di intersezione
 
-	// clamp in [0,1]
-	c.x = fminf(1.f, fmaxf(0.f, c.x));
-	c.y = fminf(1.f, fmaxf(0.f, c.y));
-	c.z = fminf(1.f, fmaxf(0.f, c.z));
+	if (optixLaunchParams.flags.computePositional)
+	{
+		vec3f P = O3 + t * D3;
+		prd.position = P;
+	}
 
-	prd.color = c;
+	// calcolo la normale 3D al punto di intersezione
+	if (optixLaunchParams.flags.computeNormal)
+	{
+		// Per questo esempio, assumiamo una normale fissa (ad esempio, verso l'alto)
+		vec3f N = vec3f(0.f, 1.f, 0.f); // Normale fissa verso l'alto
+		prd.normal = N;
+	}
+
 }
 
 extern "C" __global__ void __anyhit__radiance()
@@ -113,9 +120,26 @@ extern "C" __global__ void __miss__radiance()
 {
 	RayPayload& prd = *(RayPayload*)getPRD<RayPayload>();
 	// set to constant white as background color
-	prd.color = vec3f(1.f);
 	// Imposta depth a infinito per i miss
-	prd.depth = 1e20f;
+	prd.mask = 0; // Maschera di validità a 0 per i miss
+
+	if (optixLaunchParams.flags.computeDepth)
+	{
+		prd.depth = 1e20f;
+	}
+
+	// Se stiamo calcolando anche le posizioni, impostale a zero o a un valore di default
+	if (optixLaunchParams.flags.computePositional)
+	{
+		prd.position = vec3f(0.f); // O un valore di default
+	}
+
+	// Se stiamo calcolando anche le normali, impostale a zero o a un valore di default
+	if (optixLaunchParams.flags.computeNormal)
+	{
+		prd.normal = vec3f(0.f); // O un valore di default
+	}
+
 }
 
 //------------------------------------------------------------------------------
@@ -133,8 +157,9 @@ extern "C" __global__ void __raygen__renderFrame()
 	// won't matter, since this value will be overwritten by either
 	// the miss or hit program, anyway
 	RayPayload prd;
-	prd.color = vec3f(0.f);
 	prd.depth = 0.f;
+	prd.position = vec3f(0.f);
+	prd.normal = vec3f(0.f);
 
 	// the values we store the PRD pointer in:
 	uint32_t u0, u1;
@@ -163,16 +188,18 @@ extern "C" __global__ void __raygen__renderFrame()
 		SURFACE_RAY_TYPE,             // missSBTIndex 
 		u0, u1);
 
-	// and write to frame buffer ...
 	const uint32_t fbIndex = ix + iy * optixLaunchParams.size.x;
-	//optixLaunchParams.depth.frame.colorBuffer[fbIndex] = rgba;
 
 	// Scrivi anche la depth se il buffer è disponibile
-	if (optixLaunchParams.results.depthBuffer) {
+	if (optixLaunchParams.results.depthBuffer && optixLaunchParams.flags.computeDepth)
 		optixLaunchParams.results.depthBuffer[fbIndex] = prd.depth;
-		//optixLaunchParams.depth.frame.depthBuffer[fbIndex] = (ix + iy) / float(optixLaunchParams.depth.frame.size.x + optixLaunchParams.depth.frame.size.y); 
-	}
+
+	if(optixLaunchParams.results.positionalBuffer && optixLaunchParams.flags.computePositional)
+		optixLaunchParams.results.positionalBuffer[fbIndex] = prd.position;
+
+	if (optixLaunchParams.results.normalBuffer && optixLaunchParams.flags.computeNormal)
+		optixLaunchParams.results.normalBuffer[fbIndex] = prd.normal;
+
+	optixLaunchParams.results.maskBuffer[fbIndex] = prd.mask; // Scrivi la maschera di validità
 }
-
-
 

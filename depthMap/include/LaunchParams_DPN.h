@@ -17,6 +17,7 @@ struct LaunchParams_DPN
 		float* depthBuffer;
 		vec3f* positionalBuffer;
 		vec3f* normalBuffer;
+		uint8_t* maskBuffer; // Aggiunto buffer per maschere di validità
 	} results;
 	struct {
 		vec3f position;

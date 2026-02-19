@@ -118,6 +118,9 @@ void Depth_Generator::setCamera(const Camera& camera, float fovY, vec2i frameSiz
 	// These represent half-spans of the image plane in world units at z=1
 	launchParams.camera.horizontal = halfWidth * right;
 	launchParams.camera.vertical = halfHeight * up;
+
+	maskBuffer.resize(frameSize.x * frameSize.y);
+	launchParams.results.maskBuffer = (uint8_t*)maskBuffer.d_ptr;
 }
 
 //void Depth_Generator::saveIUMTextureToBitmap(const std::string& outDir, FrameResult& frame)
@@ -367,6 +370,10 @@ void Depth_Generator::render()
 		result.normalData.resize(frameSize.x * frameSize.y);
 		normalBuffer.download(result.normalData.data(), frameSize.x * frameSize.y);
 	}
+
+	result.maskData.clear();
+	result.maskData.resize(frameSize.x * frameSize.y);
+	maskBuffer.download(result.maskData.data(), frameSize.x * frameSize.y);
 }
 
 void Depth_Generator::needRenderDepth(bool isNeeded)

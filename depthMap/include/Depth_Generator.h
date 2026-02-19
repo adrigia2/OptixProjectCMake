@@ -20,6 +20,7 @@ class Depth_Generator : public OptixActor
 		std::vector<float> depthData; // Dati della depth map
 		std::vector<vec3f> positionalData; // Dati delle posizioni 3D
 		std::vector<vec3f> normalData; // Dati delle normali 3D
+		std::vector<uint8_t> maskData; // Maschere di validità per i pixel
 
 		bool hasDepthData() const { return !depthData.empty(); }
 		bool hasPositionalData() const { return !positionalData.empty(); }
@@ -57,6 +58,7 @@ protected:
     CUDABuffer depthBuffer;  // Aggiunto buffer per depth map
 	CUDABuffer positionBuffer; // Già esistente - per la raygen program
 	CUDABuffer normalBuffer;   // Già esistente - per la raygen program
+	CUDABuffer maskBuffer;     // Aggiunto buffer per maschere di validità
 
 	LaunchParams_DPN launchParams; // Parametri di lancio specifici per depth map
 	Result result; // Per memorizzare i risultati della generazione depth map

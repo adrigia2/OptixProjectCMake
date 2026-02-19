@@ -53,6 +53,8 @@ namespace osc {
 			camera.up = vec3f(0.0f, 1.0f, 0.0f); // Up vector della camera
 			depthGenerator.setCamera(camera, 45.0f, vec2i(1024, 1024)); // Imposta la camera e la dimensione del frame
 			depthGenerator.needRenderDepth(true); // Abilita il rendering della depth map
+			depthGenerator.meedRenderPosition(true);
+			depthGenerator.needRenderNormal(true);
 			depthGenerator.render();
 		}
 	}
