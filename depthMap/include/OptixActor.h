@@ -14,11 +14,12 @@ public:
 	virtual void createHitgroupPrograms() = 0;
 	virtual void createSBT();
 	virtual char* getPtxCode() = 0;
+	virtual void cleanup();
 
-	virtual OptixTraversableHandle createGAS(const TriangleMesh& model);
 	virtual void setTraversable(const TriangleMesh& model) = 0;
 protected:
 
+	virtual OptixTraversableHandle createGAS(const TriangleMesh& model);
 	std::vector<OptixProgramGroup> raygenPGs;
 	CUDABuffer raygenRecordsBuffer;
 	std::vector<OptixProgramGroup> missPGs;
@@ -43,4 +44,6 @@ protected:
 
 	// as output buffer
 	CUDABuffer asBuffer;
+
+	CUDABuffer launchParamsBuffer; // Buffer per i parametri di lancio
 };

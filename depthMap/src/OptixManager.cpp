@@ -58,12 +58,20 @@ void OptixManager::createContext()
 
 
 
+
+
 void OptixManager::cleanup()
 {
     //OPTIX_CHECK(optixPipelineDestroy(pipeline));
     //OPTIX_CHECK(optixModuleDestroy(module));
 	OPTIX_CHECK(optixDeviceContextDestroy(optixContext));
 	LogManager::LogDebug("Cleaned up Optix");
+}
+
+void OptixManager::setLogLevel(LogManager::Level level)
+{
+    OPTIX_CHECK(optixDeviceContextSetLogCallback
+    (optixContext, context_log_cb, nullptr, (int)level));
 }
 
 

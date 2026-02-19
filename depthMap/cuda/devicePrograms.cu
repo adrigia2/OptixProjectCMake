@@ -163,15 +163,6 @@ extern "C" __global__ void __raygen__renderFrame()
 		SURFACE_RAY_TYPE,             // missSBTIndex 
 		u0, u1);
 
-	const int r = int(255.99f * prd.color.x);
-	const int g = int(255.99f * prd.color.y);
-	const int b = int(255.99f * prd.color.z);
-
-	// convert to 32-bit rgba value (we explicitly set alpha to 0xff
-	// to make stb_image_write happy ...
-	const uint32_t rgba = 0xff000000
-		| (r << 0) | (g << 8) | (b << 16);
-
 	// and write to frame buffer ...
 	const uint32_t fbIndex = ix + iy * optixLaunchParams.size.x;
 	//optixLaunchParams.depth.frame.colorBuffer[fbIndex] = rgba;

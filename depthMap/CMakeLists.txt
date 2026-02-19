@@ -64,6 +64,7 @@ target_link_libraries(depthMap PRIVATE
 # ----- Pybind module -----
 pybind11_add_module(depthMapModule
   ${embedded_ptx_code}
+  ${embedded_ptx_code_ium}
 
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11_wrapper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp

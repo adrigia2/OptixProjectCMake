@@ -8,9 +8,9 @@ using namespace gdt;
 struct LaunchParams_DPN
 {
 	struct {
-		bool computeDepth;
-		bool computePositional;
-		bool computeNormal;
+		bool computeDepth = false; // Se true, la raygen program calcolerà la depth map
+		bool computePositional = false; // Se true, la raygen program calcolerà le posizioni 3D
+		bool computeNormal = false; // Se true, la raygen program calcolerà le normali 3D
 	} flags;
 	vec2i size; // dimensione del frame da creare (width, height)
 	struct {

@@ -8,13 +8,16 @@
 
 
 using namespace osc;
-struct IUMResult {
-	std::vector<vec3f> positions; // Posizioni 3D reali dei vertici
-	std::vector<uint8_t> masks;    // Maschere per i pixel validi
-};
 
 class IUM_Generator : public OptixActor
 {
+	struct Result
+	{
+		std::vector<vec3f> positions; // Posizioni 3D reali dei vertici
+		std::vector<uint8_t> masks;    // Maschere per i pixel validi
+		bool hasPositions() const { return !positions.empty(); }
+		bool hasMasks() const { return !masks.empty(); }
+	};
 
 public:
 
@@ -25,20 +28,22 @@ public:
 
 	IUM_Generator()
 	{
+		createModule();
 		createRaygenPrograms();
 		createMissPrograms();
 		createHitgroupPrograms();
+		createSBT();
+		createPipeline();
 	}
 
 	void setTraversable(const TriangleMesh& model) override;
-	OptixTraversableHandle createGAS(const TriangleMesh& model) override;
 	void setTextureSize(vec2i size);
 	void printStatus();
 	void render();
-	
-protected:
-	OptixTraversableHandle buildAccel(const TriangleMesh& model);
+	void cleanup() override;
 
+protected:
+	OptixTraversableHandle createGAS(const TriangleMesh& model) override;
 
 	CUDABuffer vertexBuffer;     // Già esistente - per la GAS in UV space
 	CUDABuffer indexBuffer;        // Già esistente
@@ -55,7 +60,5 @@ protected:
 	LaunchParams_IUM launchParams; // Parametri di lancio specifici per IUM
 
 private:
-	IUMResult result; // Per memorizzare i risultati della generazione IUM
-
-	
+	Result result; // Per memorizzare i risultati della generazione IUM
 };

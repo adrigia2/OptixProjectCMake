@@ -288,3 +288,17 @@ void OptixActor::createModule()
 #endif
 	if (sizeof_log > 1) PRINT(log);
 }
+
+void OptixActor::cleanup()
+{
+	if (pipeline) {
+		OPTIX_CHECK(optixPipelineDestroy(pipeline));
+		pipeline = nullptr;
+	}
+	if (module) {
+		OPTIX_CHECK(optixModuleDestroy(module));
+		module = nullptr;
+	}
+	vertexBuffer.free();
+	indexBuffer.free();
+}

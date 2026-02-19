@@ -3,6 +3,7 @@
 #include "gdt/math/AffineSpace.h"
 #include "objLoader/tiny_obj_loader.h"
 #include "CUDABuffer.h"
+#include <LogManager.h>
 
 using namespace osc;
 
@@ -19,6 +20,7 @@ protected:
 
     // costruttore privato/protetto: impedisce creazione esterna
     OptixManager() {
+
         initOptix();
         createContext();
     }
@@ -42,6 +44,7 @@ public:
 
     void printStatus();
     void cleanup();
+	void setLogLevel(LogManager::Level level);
 
     OptixDeviceContext& getContext() { return optixContext; }
 
