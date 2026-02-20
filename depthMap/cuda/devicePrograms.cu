@@ -96,23 +96,7 @@ extern "C" __global__ void __closesthit__radiance()
 	// calcolo la normale 3D al punto di intersezione
 	if (optixLaunchParams.flags.computeNormal)
 	{
-		float3 v[3];
-		optixGetTriangleVertexData(
-			optixGetGASTraversableHandle(),
-			optixGetPrimitiveIndex(),
-			optixGetSbtGASIndex(),
-			optixGetRayTime(),
-			v
-		);
-
-
-		vec3f v0{ v[0].x, v[0].y, v[0].z };
-		vec3f v1{ v[1].x, v[1].y, v[1].z };
-		vec3f v2{ v[2].x, v[2].y, v[2].z };
-
-		// compute normal from vertices
-		vec3f N = normalize(cross(v1 - v0, v2 - v0));
-		prd.normal = N;
+		prd.normal = vec3f(0.f, 1.f, 0.f); // Per questo esempio, usiamo una normale fissa verso l'alto
 	}
 
 }

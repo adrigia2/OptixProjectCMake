@@ -15,6 +15,10 @@ using namespace osc;
 	
 class Depth_Generator : public OptixActor
 {
+	
+
+public:
+
 	struct Result
 	{
 		std::vector<float> depthData; // Dati della depth map
@@ -27,7 +31,6 @@ class Depth_Generator : public OptixActor
 		bool hasNormalData() const { return !normalData.empty(); }
 	};
 
-public:
 	void createRaygenPrograms() override;
 	void createMissPrograms() override;
 	void createHitgroupPrograms() override;
@@ -51,6 +54,8 @@ public:
 		createPipeline();
 	}
 	void setCamera(const Camera& camera, float fovY, vec2i frameSize);
+
+	Result getResult() const { return result; }
 
 protected:
 

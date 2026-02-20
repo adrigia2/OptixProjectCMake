@@ -11,6 +11,10 @@ using namespace osc;
 
 class IUM_Generator : public OptixActor
 {
+	
+
+public:
+
 	struct Result
 	{
 		std::vector<vec3f> positions; // Posizioni 3D reali dei vertici
@@ -18,8 +22,6 @@ class IUM_Generator : public OptixActor
 		bool hasPositions() const { return !positions.empty(); }
 		bool hasMasks() const { return !masks.empty(); }
 	};
-
-public:
 
 	void createRaygenPrograms() override;
 	void createMissPrograms() override;
@@ -41,6 +43,8 @@ public:
 	void printStatus();
 	void render();
 	void cleanup() override;
+
+	Result getResult() const { return result; }
 
 protected:
 	OptixTraversableHandle createGAS(const TriangleMesh& model) override;

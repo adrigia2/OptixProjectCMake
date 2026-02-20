@@ -36,27 +36,26 @@ namespace osc {
 		TriangleMesh model;
 		model.addFromObjFile("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
 		LogManager::LogInfo("Model loaded with %zu vertices and %zu triangles", model.vertex.size(), model.index.size());
-		for (int i = 0; i < 10; i++)
-		{
-			IUM_Generator iumGenerator;
-			Depth_Generator depthGenerator;
-			LogManager::LogInfo("Starting IUM generation...");
-			iumGenerator.setTraversable(model);
-			iumGenerator.setTextureSize(vec2i(1024, 1024)); // Imposta la dimensione della texture per l'IUM
-			iumGenerator.render();
+	
+		IUM_Generator iumGenerator;
+		Depth_Generator depthGenerator;
+		LogManager::LogInfo("Starting IUM generation...");
+		iumGenerator.setTraversable(model);
+		iumGenerator.setTextureSize(vec2i(1024, 1024)); // Imposta la dimensione della texture per l'IUM
+		iumGenerator.render();
 
 
-			depthGenerator.setTraversable(model);
-			Camera camera;
-			camera.pos = vec3f(0.0f, 0.0f, 5.0f); // Posizione della camera
-			camera.forward = vec3f(0.0f, 0.0f, -1.0f); // Direzione della camera
-			camera.up = vec3f(0.0f, 1.0f, 0.0f); // Up vector della camera
-			depthGenerator.setCamera(camera, 45.0f, vec2i(1024, 1024)); // Imposta la camera e la dimensione del frame
-			depthGenerator.needRenderDepth(true); // Abilita il rendering della depth map
-			depthGenerator.meedRenderPosition(true);
-			depthGenerator.needRenderNormal(true);
-			depthGenerator.render();
-		}
+		Camera camera;
+		camera.pos = vec3f(0.0f, 0.0f, 5.0f); // Posizione della camera
+		camera.forward = vec3f(0.0f, 0.0f, -1.0f); // Direzione della camera
+		camera.up = vec3f(0.0f, 1.0f, 0.0f); // Up vector della camera
+
+		depthGenerator.setTraversable(model);
+		depthGenerator.setCamera(camera, 45.0f, vec2i(1024, 1024)); // Imposta la camera e la dimensione del frame
+		depthGenerator.needRenderDepth(true); // Abilita il rendering della depth map
+		depthGenerator.meedRenderPosition(true);
+		depthGenerator.needRenderNormal(true);
+		depthGenerator.render();
 	}
 
 } // ::osc
