@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/native_enum.h> // Not already included with pybind11.h
 #include <pybind11/stl.h>
 #include "TriangleMesh.h"
 #include "OptixManager.h"
@@ -15,7 +16,9 @@ class OptiXPipeline {
 
 };
 
-PYBIND11_MODULE(depthMapModule, m) {
+PYBIND11_MODULE(depthMapModule, m, py::mod_gil_not_used()) {
+	m.doc() = "Module for generating stuff with OptiX";
+
 	py::class_<TriangleMesh>(m, "TriangleMesh")
 		.def(py::init<>())
 		.def("add_from_obj_file",
@@ -23,10 +26,16 @@ PYBIND11_MODULE(depthMapModule, m) {
 			py::arg("filename"));
 
 	py::class_<Camera>(m, "Camera")
-		.def(py::init<>())
-		.def_readwrite("pos", &Camera::pos)
-		.def_readwrite("forward", &Camera::forward)
-		.def_readwrite("up", &Camera::up);
+		.def(py::init<vec3f, vec3f, vec3f>(),
+			py::arg("pos"), py::arg("forward"), py::arg("up"))
+		.def_property("pos", &Camera::getPos, &Camera::setPos)
+		.def_property("forward", &Camera::getForward, &Camera::setForward)
+		.def_property("up", &Camera::getUp, &Camera::setUp)
+		.def("__repr__", [](const Camera& cam) {
+		return "<Camera pos=" + std::to_string(cam.getPos().x) + "," + std::to_string(cam.getPos().y) + "," + std::to_string(cam.getPos().z) +
+			" forward=" + std::to_string(cam.getForward().x) + "," + std::to_string(cam.getForward().y) + "," + std::to_string(cam.getForward().z) +
+			" up=" + std::to_string(cam.getUp().x) + "," + std::to_string(cam.getUp().y) + "," + std::to_string(cam.getUp().z) + ">";
+			});
 
 	py::class_<Depth_Generator>(m, "DepthGenerator")
 		.def(py::init<>())
@@ -50,12 +59,14 @@ PYBIND11_MODULE(depthMapModule, m) {
 			py::return_value_policy::reference)
 		.def("set_log_level", &OptixManager::setLogLevel, py::arg("level"));
 
-	py::enum_<LogManager::Level>(m, "LogLevel")
+	py::native_enum<LogManager::Level>(m, "LogLevel", "enum.IntEnum")
 		.value("Debug", LogManager::Level::Debug)
 		.value("Info", LogManager::Level::Info)
 		.value("Warning", LogManager::Level::Warning)
 		.value("Error", LogManager::Level::Error)
-		.value("Default", LogManager::Level::Default);
+		.value("Default", LogManager::Level::Default)
+		.export_values()
+		.finalize();
 
 	py::class_<gdt::vec3f>(m, "vec3f")
 		.def(py::init<>())

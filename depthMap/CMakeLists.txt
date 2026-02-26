@@ -62,7 +62,7 @@ target_link_libraries(depthMap PRIVATE
 )
 
 # ----- Pybind module -----
-pybind11_add_module(depthMapModule
+pybind11_add_module(OptixProgrammablePasses
   ${embedded_ptx_code}
   ${embedded_ptx_code_ium}
 
@@ -92,13 +92,13 @@ pybind11_add_module(depthMapModule
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
 )
 
-target_include_directories(depthMapModule PRIVATE
+target_include_directories(OptixProgrammablePasses PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CUDA_INCLUDE_DIRS}
   ${OptiX_INCLUDE}
 )
 
-target_link_libraries(depthMapModule PRIVATE
+target_link_libraries(OptixProgrammablePasses PRIVATE
   gdt
   glfWindow
   ${OPENGL_gl_LIBRARY}
@@ -108,3 +108,5 @@ target_link_libraries(depthMapModule PRIVATE
   ${CUDA_LIB}
   ${GLFW_LIB}
 )
+
+install(TARGETS OptixProgrammablePasses DESTINATION .)

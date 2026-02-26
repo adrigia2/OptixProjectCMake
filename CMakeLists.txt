@@ -1,19 +1,11 @@
-﻿cmake_minimum_required(VERSION 3.10)
+﻿cmake_minimum_required(VERSION 3.15)
 project(OptixProjectCMake)
 
-# ✅ Supporto MSVC Edit and Continue (debug)
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT 
-      "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,\
-       $<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,\
-       $<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
-
-set(OptiX_INSTALL_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0")
+#set(OptiX_INSTALL_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0")
+set(OptiX_INSTALL_DIR)
 
 # ✅ Converti il path (gestisce spazi in 'ProgramData')
-file(TO_CMAKE_PATH "${OptiX_INSTALL_DIR}" OptiX_INSTALL_DIR)
+#file(TO_CMAKE_PATH "${OptiX_INSTALL_DIR}" OptiX_INSTALL_DIR)
 
 # ✅ Aggiungi la cartella con FindOptiX.cmake
 list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
@@ -64,9 +56,6 @@ include_directories(common)
 add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
 add_subdirectory(common/pybind11)
 
-#find_package(OpenEXR CONFIG REQUIRED)
 
-#add_subdirectory(ExecutableProject)
-#add_subdirectory(example03_inGLFWindow)
-#add_subdirectory(example04_firstTriangleMesh) 
+
 add_subdirectory(depthMap) 

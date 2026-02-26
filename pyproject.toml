@@ -1,0 +1,13 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "OptixProgrammablePasses"
+version = "0.1.0"
+
+[tool.scikit-build.cmake.define]
+OptiX_INSTALL_DIR = "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0"
+
+[tool.cibuildwheel]
+archs = ["AMD64"]  # solo 64-bit su Windows

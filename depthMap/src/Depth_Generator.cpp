@@ -92,8 +92,8 @@ void Depth_Generator::createHitgroupPrograms()
 
 void Depth_Generator::setCamera(const Camera& camera, float fovY, vec2i frameSize)
 {
-	launchParams.camera.position = camera.pos;
-	launchParams.camera.direction = normalize(camera.forward);
+	launchParams.camera.position = camera.getPos();
+	launchParams.camera.direction = normalize(camera.getForward());
 	launchParams.size = frameSize;
 
 	const float aspect = frameSize.x / float(frameSize.y);
@@ -104,7 +104,7 @@ void Depth_Generator::setCamera(const Camera& camera, float fovY, vec2i frameSiz
 
 	// Build a robust orthonormal basis (right, up, forward)
 	// (If your handedness is flipped, swap cross order as noted below.)
-	auto right = cross(launchParams.camera.direction, camera.up);
+	auto right = cross(launchParams.camera.direction, camera.getUp());
 	const float rightLen2 = dot(right, right);
 	if (rightLen2 < 1e-12f) {
 		// Fallback if up is (almost) parallel to direction
