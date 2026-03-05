@@ -19,7 +19,7 @@ namespace
 
     bool g_consoleEnabled = true;
     bool g_fileEnabled = false;
-    int  g_minLevel = 0; // Debug
+    LogManager::Level g_minLevel = LogManager::Level::Verbose; 
 
     std::ofstream g_file;
 
@@ -27,11 +27,11 @@ namespace
     {
         switch (lvl)
         {
-        case LogManager::Level::Debug:   return "DEBUG";
-        case LogManager::Level::Info:    return "INFO";
-        case LogManager::Level::Warning: return "WARN";
-        case LogManager::Level::Error:   return "ERROR";
-        case LogManager::Level::Default: return "LOG";
+        case LogManager::Level::Disabled: return "DISABLED";
+        case LogManager::Level::Fatal:    return "FATAL";
+        case LogManager::Level::Error:    return "ERROR";
+        case LogManager::Level::Warning:  return "WARNING";
+        case LogManager::Level::Verbose:  return "VERBOSE";
         }
         return "LOG";
     }
@@ -80,11 +80,12 @@ namespace
     {
         switch (lvl)
         {
-        case LogManager::Level::Error:   return FOREGROUND_RED | FOREGROUND_INTENSITY;
-        case LogManager::Level::Warning: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-        case LogManager::Level::Info:    return FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-        case LogManager::Level::Debug:   return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED; // default gray
-        default:                         return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+        case LogManager::Level::Fatal:    return FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY; // bright magenta
+        case LogManager::Level::Error:    return FOREGROUND_RED | FOREGROUND_INTENSITY;                   // bright red
+        case LogManager::Level::Warning:  return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY; // bright yellow
+        case LogManager::Level::Verbose:  return FOREGROUND_GREEN | FOREGROUND_INTENSITY;                  // bright green
+        case LogManager::Level::Disabled: return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;      // gray
+        default:                          return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
         }
     }
 #else
@@ -92,28 +93,19 @@ namespace
     {
         switch (lvl)
         {
-        case LogManager::Level::Error:   return "\x1b[31;1m"; // bright red
-        case LogManager::Level::Warning: return "\x1b[33;1m"; // bright yellow
-        case LogManager::Level::Info:    return "\x1b[32;1m"; // bright green
-        case LogManager::Level::Debug:   return "\x1b[0m";    // reset
-        default:                         return "\x1b[0m";
+        case LogManager::Level::Fatal:    return "\x1b[35;1m"; // bright magenta
+        case LogManager::Level::Error:    return "\x1b[31;1m"; // bright red
+        case LogManager::Level::Warning:  return "\x1b[33;1m"; // bright yellow
+        case LogManager::Level::Verbose:  return "\x1b[32;1m"; // bright green
+        case LogManager::Level::Disabled: return "\x1b[0m";    // reset
+        default:                          return "\x1b[0m";
         }
     }
 #endif
 
     bool PassesFilter(LogManager::Level lvl)
     {
-        // Default e Log() li facciamo passare sempre, oppure li mappiamo a Info.
-        int levelInt = 1;
-        switch (lvl)
-        {
-        case LogManager::Level::Debug:   levelInt = 0; break;
-        case LogManager::Level::Info:    levelInt = 1; break;
-        case LogManager::Level::Warning: levelInt = 2; break;
-        case LogManager::Level::Error:   levelInt = 3; break;
-        case LogManager::Level::Default: levelInt = 1; break;
-        }
-        return levelInt >= g_minLevel;
+        return lvl != LogManager::Level::Disabled && lvl <= g_minLevel;
     }
 } // namespace
 
@@ -145,7 +137,7 @@ void LogManager::EnableFile(bool enabled)
     g_fileEnabled = enabled;
 }
 
-void LogManager::SetMinLevel(int level)
+void LogManager::SetMinLevel(Level level)
 {
     std::lock_guard<std::mutex> lock(g_logMutex);
     g_minLevel = level;
@@ -157,7 +149,7 @@ void LogManager::Log(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    LogImpl(Level::Default, format, args);
+    LogImpl(Level::Verbose, format, args);
     va_end(args);
 }
 
@@ -177,19 +169,11 @@ void LogManager::LogWarning(const char* format, ...)
     va_end(args);
 }
 
-void LogManager::LogInfo(const char* format, ...)
+void LogManager::LogFatal(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    LogImpl(Level::Info, format, args);
-    va_end(args);
-}
-
-void LogManager::LogDebug(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    LogImpl(Level::Debug, format, args);
+    LogImpl(Level::Fatal, format, args);
     va_end(args);
 }
 

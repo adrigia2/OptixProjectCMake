@@ -14,7 +14,7 @@ static void context_log_cb(unsigned int level,
 
 void OptixManager::initOptix()
 {
-    std::cout << "#osc: initializing optix..." << std::endl;
+	LogManager::Log("Initializing Optix...");
 
     // -------------------------------------------------------
     // check for available optix capable devices
@@ -28,13 +28,13 @@ void OptixManager::initOptix()
 	// if no devices found, bail out with error message
     if (numDevices == 0)
         throw std::runtime_error("No CUDA capable devices found!");
-	LogManager::LogInfo("Found %d CUDA devices", numDevices);
+	LogManager::Log("Found %d CUDA devices", numDevices);
 
     // -------------------------------------------------------
     // initialize optix
     // -------------------------------------------------------
     OPTIX_CHECK(optixInit());
-	LogManager::LogInfo("Successfully initialized Optix");
+	LogManager::Log("Successfully initialized Optix");
 }
 
 void OptixManager::createContext()
@@ -45,15 +45,14 @@ void OptixManager::createContext()
     CUDA_CHECK(StreamCreate(&stream));
 
     cudaGetDeviceProperties(&deviceProps, deviceID);
-	LogManager::LogInfo("Running on device: %s", deviceProps.name);
+	LogManager::Log("Running on device: %s", deviceProps.name);
 
     CUresult  cuRes = cuCtxGetCurrent(&cudaContext);
     if (cuRes != CUDA_SUCCESS)
 		LogManager::LogError("Error querying current context: error code %d", cuRes);
 
     OPTIX_CHECK(optixDeviceContextCreate(cudaContext, 0, &optixContext));
-    OPTIX_CHECK(optixDeviceContextSetLogCallback
-	(optixContext, context_log_cb, nullptr, (int)LogManager::Level::Default));
+	setLogLevel(LogManager::Level::Verbose);
 }
 
 
@@ -65,7 +64,7 @@ void OptixManager::cleanup()
     //OPTIX_CHECK(optixPipelineDestroy(pipeline));
     //OPTIX_CHECK(optixModuleDestroy(module));
 	OPTIX_CHECK(optixDeviceContextDestroy(optixContext));
-	LogManager::LogDebug("Cleaned up Optix");
+	LogManager::Log("Cleaned up Optix");
 }
 
 void OptixManager::setLogLevel(LogManager::Level level)
@@ -79,7 +78,7 @@ void OptixManager::render(int launchWidth, int launchHeight, int launchDepth, Op
 {
     if(launchWidth == 0 || launchHeight == 0)
 		return;
-	LogManager::LogInfo("Launching Optix with dimensions: %u x %u", launchWidth, launchHeight);
+	LogManager::Log("Launching Optix with dimensions: %u x %u", launchWidth, launchHeight);
 
     OPTIX_CHECK(optixLaunch(/*! pipeline we're launching launch: */
         pipeline, stream,

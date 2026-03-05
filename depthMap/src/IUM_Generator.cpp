@@ -99,7 +99,7 @@ void IUM_Generator::render()
 	int dimension = launchParams.size.x * launchParams.size.y;
 	// Ridimensiona i vettori per contenere i risultati
 
-	LogManager::LogDebug("IUM generation completed: %u pixels processed",
+	LogManager::Log("IUM generation completed: %u pixels processed",
 		dimension);
 
 	result.positions.clear();
@@ -139,7 +139,7 @@ void IUM_Generator::setTraversable(const TriangleMesh& model)
 	launchParams.data.indices = (vec3i*)indexBuffer.d_pointer();
 	launchParams.data.numTriangles = (uint32_t)model.index.size();
 
-	LogManager::LogInfo("IUM geometry data uploaded: %zu vertices, %zu triangles",
+	LogManager::Log("IUM geometry data uploaded: %zu vertices, %zu triangles",
 		model.vertex.size(), model.index.size());
 }
 
@@ -153,20 +153,20 @@ void IUM_Generator::setTextureSize(vec2i size)
 	launchParams.results.positions = (vec3f*)positionsBuffer.d_pointer();
 	launchParams.results.masks = (uint8_t*)masksBuffer.d_pointer();
 
-	LogManager::LogDebug("IUM texture size set to %u x %u", size.x, size.y);
+	LogManager::Log("IUM texture size set to %u x %u", size.x, size.y);
 }
 
 void IUM_Generator::printStatus()
 {
-	LogManager::LogDebug("IUM_Generator status:");
-	LogManager::LogDebug("  Raygen programs: %zu", raygenPGs.size());
-	LogManager::LogDebug("  Miss programs: %zu", missPGs.size());
-	LogManager::LogDebug("  Hitgroup programs: %zu", hitgroupPGs.size());
-	LogManager::LogDebug("  UV vertex buffer size: %zu bytes", vertexBuffer.sizeInBytes);
-	LogManager::LogDebug("  Index buffer size: %zu bytes", indexBuffer.sizeInBytes);
-	LogManager::LogDebug("  Acceleration structure buffer size: %zu bytes", asBuffer.sizeInBytes);
-	LogManager::LogDebug("  Positions buffer size: %zu bytes", positionsBuffer.sizeInBytes);
-	LogManager::LogDebug("  Masks buffer size: %zu bytes", masksBuffer.sizeInBytes);
+	LogManager::Log("IUM_Generator status:");
+	LogManager::Log("  Raygen programs: %zu", raygenPGs.size());
+	LogManager::Log("  Miss programs: %zu", missPGs.size());
+	LogManager::Log("  Hitgroup programs: %zu", hitgroupPGs.size());
+	LogManager::Log("  UV vertex buffer size: %zu bytes", vertexBuffer.sizeInBytes);
+	LogManager::Log("  Index buffer size: %zu bytes", indexBuffer.sizeInBytes);
+	LogManager::Log("  Acceleration structure buffer size: %zu bytes", asBuffer.sizeInBytes);
+	LogManager::Log("  Positions buffer size: %zu bytes", positionsBuffer.sizeInBytes);
+	LogManager::Log("  Masks buffer size: %zu bytes", masksBuffer.sizeInBytes);
 }
 
 //void IUM_Generator::saveIUMTextureToBitmap(const std::string& filename)

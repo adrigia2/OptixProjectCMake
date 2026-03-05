@@ -47,7 +47,7 @@ namespace osc {
 
         file.close();
 
-        LogManager::LogDebug("IOManager: Successfully saved %zu bytes to %s", size, filepath.c_str());
+        LogManager::Log("IOManager: Successfully saved %zu bytes to %s", size, filepath.c_str());
         return IOResult(true, "", size);
     }
 
@@ -78,7 +78,7 @@ namespace osc {
 
         // Try to create the directory
         if (MKDIR(dirpath.c_str()) == 0) {
-            LogManager::LogInfo("IOManager: Created directory: %s", dirpath.c_str());
+            LogManager::LogFatal("IOManager: Created directory: %s", dirpath.c_str());
             return true;
         }
 

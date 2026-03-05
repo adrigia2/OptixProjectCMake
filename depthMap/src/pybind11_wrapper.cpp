@@ -1,13 +1,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/native_enum.h> // Not already included with pybind11.h
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+#include "vec3f_caster.h"
 #include "TriangleMesh.h"
 #include "OptixManager.h"
 #include "IUM_Generator.h"
 #include "Depth_Generator.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
-#include <pybind11/numpy.h>
 
 namespace py = pybind11;
 
@@ -16,7 +17,7 @@ class OptiXPipeline {
 
 };
 
-PYBIND11_MODULE(depthMapModule, m, py::mod_gil_not_used()) {
+PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 	m.doc() = "Module for generating stuff with OptiX";
 
 	py::class_<TriangleMesh>(m, "TriangleMesh")
@@ -57,16 +58,35 @@ PYBIND11_MODULE(depthMapModule, m, py::mod_gil_not_used()) {
 	py::class_<OptixManager>(m, "OptixManager")
 		.def_static("instance", &OptixManager::instance,
 			py::return_value_policy::reference)
-		.def("set_log_level", &OptixManager::setLogLevel, py::arg("level"));
+		.def("set_log_level", &OptixManager::setLogLevel, py::arg("level"),
+			"Set the log level for both OptiX callbacks and LogManager filter.");
 
 	py::native_enum<LogManager::Level>(m, "LogLevel", "enum.IntEnum")
-		.value("Debug", LogManager::Level::Debug)
-		.value("Info", LogManager::Level::Info)
-		.value("Warning", LogManager::Level::Warning)
+		.value("Disabled", LogManager::Level::Disabled)
+		.value("Fatal", LogManager::Level::Fatal)
 		.value("Error", LogManager::Level::Error)
-		.value("Default", LogManager::Level::Default)
+		.value("Warning", LogManager::Level::Warning)
+		.value("Verbose", LogManager::Level::Verbose)
 		.export_values()
 		.finalize();
+
+	py::class_<LogManager>(m, "LogManager")
+		.def_static("log", [](const std::string& msg) { LogManager::Log("%s", msg.c_str()); },
+			py::arg("message"))
+		.def_static("log_error", [](const std::string& msg) { LogManager::LogError("%s", msg.c_str()); },
+			py::arg("message"))
+		.def_static("log_warning", [](const std::string& msg) { LogManager::LogWarning("%s", msg.c_str()); },
+			py::arg("message"))
+		.def_static("log_fatal", [](const std::string& msg) { LogManager::LogFatal("%s", msg.c_str()); },
+			py::arg("message"))
+		.def_static("set_log_file", &LogManager::SetLogFile,
+			py::arg("path"), py::arg("append") = true)
+		.def_static("enable_console", &LogManager::EnableConsole,
+			py::arg("enabled"))
+		.def_static("enable_file", &LogManager::EnableFile,
+			py::arg("enabled"))
+		.def_static("set_min_level", &LogManager::SetMinLevel,
+			py::arg("level"));
 
 	py::class_<gdt::vec3f>(m, "vec3f")
 		.def(py::init<>())

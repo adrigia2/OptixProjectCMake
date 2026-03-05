@@ -1,0 +1,158 @@
+"""
+Module for generating stuff with OptiX
+"""
+from __future__ import annotations
+import enum
+import numpy
+import numpy.typing
+import typing
+__all__: list[str] = ['Camera', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'IUMGenerator', 'IUMResult', 'LogLevel', 'LogManager', 'OptixManager', 'TriangleMesh', 'Verbose', 'Warning', 'vec3f']
+class Camera:
+    forward: vec3f
+    pos: vec3f
+    up: vec3f
+    def __init__(self, pos: vec3f, forward: vec3f, up: vec3f) -> None:
+        ...
+    def __repr__(self) -> str:
+        ...
+class DepthGenerator:
+    def __init__(self) -> None:
+        ...
+    def get_result(self) -> ...:
+        ...
+    def need_render_depth(self, isNeeded: bool) -> None:
+        ...
+    def need_render_normal(self, isNeeded: bool) -> None:
+        ...
+    def need_render_position(self, isNeeded: bool) -> None:
+        ...
+    def render(self) -> None:
+        ...
+    def set_camera(self, camera: Camera, fovY: typing.SupportsFloat | typing.SupportsIndex, frameSize: vec2i) -> None:
+        ...
+    def set_traversable(self, model: TriangleMesh) -> None:
+        ...
+class DepthResult:
+    def __init__(self) -> None:
+        ...
+    def has_depth_data(self) -> bool:
+        ...
+    def has_normal_data(self) -> bool:
+        ...
+    def has_positional_data(self) -> bool:
+        ...
+    @property
+    def depths_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def masks_np(self) -> numpy.typing.NDArray[numpy.uint8]:
+        ...
+    @property
+    def normals_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def positions_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+class IUMGenerator:
+    def __init__(self) -> None:
+        ...
+    def get_result(self) -> ...:
+        ...
+    def render(self) -> None:
+        ...
+    def set_texture_size(self, size: vec2i) -> None:
+        ...
+    def set_traversable(self, model: TriangleMesh) -> None:
+        ...
+class IUMResult:
+    def has_masks(self) -> bool:
+        ...
+    def has_positions(self) -> bool:
+        ...
+    @property
+    def masks_np(self) -> numpy.typing.NDArray[numpy.uint8]:
+        ...
+    @property
+    def positions_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+class LogLevel(enum.IntEnum):
+    Disabled: typing.ClassVar[LogLevel]  # value = <LogLevel.Disabled: 0>
+    Error: typing.ClassVar[LogLevel]  # value = <LogLevel.Error: 2>
+    Fatal: typing.ClassVar[LogLevel]  # value = <LogLevel.Fatal: 1>
+    Verbose: typing.ClassVar[LogLevel]  # value = <LogLevel.Verbose: 4>
+    Warning: typing.ClassVar[LogLevel]  # value = <LogLevel.Warning: 3>
+    @classmethod
+    def __new__(cls, value):
+        ...
+    def __format__(self, format_spec):
+        """
+        Convert to a string according to format_spec.
+        """
+class LogManager:
+    @staticmethod
+    def enable_console(enabled: bool) -> None:
+        ...
+    @staticmethod
+    def enable_file(enabled: bool) -> None:
+        ...
+    @staticmethod
+    def log(message: str) -> None:
+        ...
+    @staticmethod
+    def log_error(message: str) -> None:
+        ...
+    @staticmethod
+    def log_fatal(message: str) -> None:
+        ...
+    @staticmethod
+    def log_warning(message: str) -> None:
+        ...
+    @staticmethod
+    def set_log_file(path: str, append: bool = True) -> None:
+        ...
+    @staticmethod
+    def set_min_level(level: LogLevel) -> None:
+        ...
+class OptixManager:
+    @staticmethod
+    def instance() -> OptixManager:
+        ...
+    def set_log_level(self, level: ...) -> None:
+        """
+        Set the log level for both OptiX callbacks and LogManager filter.
+        """
+class TriangleMesh:
+    def __init__(self) -> None:
+        ...
+    def add_from_obj_file(self, filename: str) -> None:
+        ...
+class vec3f:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex, arg2: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def x(self) -> float:
+        ...
+    @x.setter
+    def x(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def y(self) -> float:
+        ...
+    @y.setter
+    def y(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def z(self) -> float:
+        ...
+    @z.setter
+    def z(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+Disabled: LogLevel  # value = <LogLevel.Disabled: 0>
+Error: LogLevel  # value = <LogLevel.Error: 2>
+Fatal: LogLevel  # value = <LogLevel.Fatal: 1>
+Verbose: LogLevel  # value = <LogLevel.Verbose: 4>
+Warning: LogLevel  # value = <LogLevel.Warning: 3>

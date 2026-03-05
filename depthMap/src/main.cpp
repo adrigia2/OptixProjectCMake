@@ -35,11 +35,11 @@ namespace osc {
 	{
 		TriangleMesh model;
 		model.addFromObjFile("C:/Users/adria/Documents/GitHub/OptixProjectCMake/Scenes/SwordShield/Models/SwordShield.obj");
-		LogManager::LogInfo("Model loaded with %zu vertices and %zu triangles", model.vertex.size(), model.index.size());
+		LogManager::LogFatal("Model loaded with %zu vertices and %zu triangles", model.vertex.size(), model.index.size());
 	
 		IUM_Generator iumGenerator;
 		Depth_Generator depthGenerator;
-		LogManager::LogInfo("Starting IUM generation...");
+		LogManager::LogFatal("Starting IUM generation...");
 		iumGenerator.setTraversable(model);
 		iumGenerator.setTextureSize(vec2i(1024, 1024)); // Imposta la dimensione della texture per l'IUM
 		iumGenerator.render();

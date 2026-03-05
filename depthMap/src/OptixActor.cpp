@@ -227,7 +227,7 @@ void OptixActor::createPipeline()
 		log, &sizeof_log,
 		&pipeline
 	));
-	if (sizeof_log > 1) PRINT(log);
+	if (sizeof_log > 1) LogManager::Log (log);
 
 	OPTIX_CHECK(optixPipelineSetStackSize
 	(/* [in] The pipeline to configure the stack size for */
@@ -243,7 +243,7 @@ void OptixActor::createPipeline()
 		/* [in] The maximum depth of a traversable graph
 		   passed to trace. */
 		1));
-	if (sizeof_log > 1) PRINT(log);
+	if (sizeof_log > 1) LogManager::Log(log);
 }
 
 void OptixActor::createModule()
