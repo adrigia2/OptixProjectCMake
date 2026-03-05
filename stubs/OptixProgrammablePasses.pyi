@@ -2,11 +2,12 @@
 Module for generating stuff with OptiX
 """
 from __future__ import annotations
+import collections.abc
 import enum
 import numpy
 import numpy.typing
 import typing
-__all__: list[str] = ['Camera', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'IUMGenerator', 'IUMResult', 'LogLevel', 'LogManager', 'OptixManager', 'TriangleMesh', 'Verbose', 'Warning', 'vec3f']
+__all__: list[str] = ['Camera', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'IUMGenerator', 'IUMResult', 'LogLevel', 'LogManager', 'OptixManager', 'TriangleMesh', 'Verbose', 'Warning', 'vec2i', 'vec3f']
 class Camera:
     forward: vec3f
     pos: vec3f
@@ -18,7 +19,7 @@ class Camera:
 class DepthGenerator:
     def __init__(self) -> None:
         ...
-    def get_result(self) -> ...:
+    def get_result(self) -> DepthResult:
         ...
     def need_render_depth(self, isNeeded: bool) -> None:
         ...
@@ -56,7 +57,7 @@ class DepthResult:
 class IUMGenerator:
     def __init__(self) -> None:
         ...
-    def get_result(self) -> ...:
+    def get_result(self) -> IUMResult:
         ...
     def render(self) -> None:
         ...
@@ -117,7 +118,7 @@ class OptixManager:
     @staticmethod
     def instance() -> OptixManager:
         ...
-    def set_log_level(self, level: ...) -> None:
+    def set_log_level(self, level: LogLevel) -> None:
         """
         Set the log level for both OptiX callbacks and LogManager filter.
         """
@@ -125,6 +126,32 @@ class TriangleMesh:
     def __init__(self) -> None:
         ...
     def add_from_obj_file(self, filename: str) -> None:
+        ...
+class vec2i:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: collections.abc.Sequence) -> None:
+        ...
+    def __iter__(self) -> collections.abc.Iterator:
+        ...
+    def __repr__(self) -> str:
+        ...
+    @property
+    def x(self) -> int:
+        ...
+    @x.setter
+    def x(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def y(self) -> int:
+        ...
+    @y.setter
+    def y(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
 class vec3f:
     @typing.overload

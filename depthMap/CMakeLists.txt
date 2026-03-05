@@ -90,6 +90,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${CMAKE_CURRENT_SOURCE_DIR}/include/ImageResultType.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TransformReader.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/vec3f_caster.h
 )
 
 target_include_directories(OptixProgrammablePasses PRIVATE

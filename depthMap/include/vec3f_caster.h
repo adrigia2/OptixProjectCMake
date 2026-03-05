@@ -69,20 +69,10 @@ public:
 
     // Python -> C++
     bool load(handle src, bool convert) {
-        // 1. list or tuple of exactly 2 numeric elements
-        if (isinstance<sequence>(src)) {
-            auto seq = reinterpret_borrow<sequence>(src);
-            if (seq.size() != 2)
-                return false;
-            try {
-                value = gdt::vec2i(
-                    seq[0].cast<int32_t>(),
-                    seq[1].cast<int32_t>()
-                );
-                return true;
-            } catch (...) {
-                return false;
-            }
+        // 1. Already a wrapped vec2i
+        if (isinstance<gdt::vec2i>(src)) {
+            value = src.cast<gdt::vec2i>();
+            return true;
         }
 
         // 2. numpy array (1-D, at least 2 elements)
@@ -100,12 +90,29 @@ public:
             }
         }
 
+        // 3. list or tuple of exactly 2 numeric elements
+        if (isinstance<sequence>(src)) {
+            auto seq = reinterpret_borrow<sequence>(src);
+            if (seq.size() != 2)
+                return false;
+            try {
+                value = gdt::vec2i(
+                    seq[0].cast<int32_t>(),
+                    seq[1].cast<int32_t>()
+                );
+                return true;
+            } catch (...) {
+                return false;
+            }
+        }
+
         return false;
     }
 
-    // C++ -> Python: return a (x, y) tuple
-    static handle cast(const gdt::vec2i& src, return_value_policy /*policy*/, handle /*parent*/) {
-        return pybind11::make_tuple(src.x, src.y).release();
+    // C++ -> Python: return a registered vec2i wrapper object
+    static handle cast(const gdt::vec2i& src, return_value_policy policy, handle parent) {
+        (void)policy; (void)parent;
+        return pybind11::cast(src, return_value_policy::copy).release();
     }
 };
 
