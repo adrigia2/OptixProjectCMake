@@ -12,10 +12,15 @@ cuda_compile_and_embed(embedded_ptx_code_ium
   ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsIUM.cu
 )
 
+cuda_compile_and_embed(embedded_ptx_code_vis
+  ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsVis.cu
+)
+
 # ----- Executable -----
 add_executable(depthMap
   ${embedded_ptx_code}
   ${embedded_ptx_code_ium}
+  ${embedded_ptx_code_vis}
 
   # src/
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -24,6 +29,7 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/IUM_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Visibility_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Depth_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixActor.cpp
 
@@ -40,6 +46,7 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TriangleMesh.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/ImageResultType.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/IUM_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Visibility_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Depth_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
 )
@@ -65,10 +72,12 @@ target_link_libraries(depthMap PRIVATE
 pybind11_add_module(OptixProgrammablePasses
   ${embedded_ptx_code}
   ${embedded_ptx_code_ium}
+  ${embedded_ptx_code_vis}
 
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11_wrapper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/IUM_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Visibility_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Depth_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/LogManager.cpp
@@ -78,6 +87,7 @@ pybind11_add_module(OptixProgrammablePasses
 
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixManager.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/IUM_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Visibility_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Depth_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TriangleMesh.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LogManager.h

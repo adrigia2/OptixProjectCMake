@@ -7,6 +7,7 @@
 #include "OptixManager.h"
 #include "IUM_Generator.h"
 #include "Depth_Generator.h"
+#include "Visibility_Generator.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
 
@@ -192,6 +193,29 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("get_result", [](IUM_Generator& self) -> IUM_Generator::Result {
 			return self.getResult();
 		}, py::return_value_policy::move);
+
+	py::class_<Visibility_Generator>(m, "VisibilityGenerator")
+		.def(py::init<>())
+		.def("set_traversable", &Visibility_Generator::setTraversable, py::arg("model"))
+		.def("check_visibility", [](Visibility_Generator& self, const IUM_Generator::Result& ium_res, int width, int height, py::list cameras_list) {
+			std::vector<Camera> camDefs;
+			for (auto item : cameras_list) {
+				Camera cam = item.cast<Camera>();
+				camDefs.push_back(cam);
+			}
+
+            std::vector<uint8_t> h_results = self.checkVisibility(ium_res, width, height, camDefs);
+			
+			py::ssize_t num_pixels = width * height;
+			py::ssize_t num_cameras = camDefs.size();
+			
+			// Restituiamo una py::array_t di shape (num_pixels, num_cameras)
+			return py::array_t<uint8_t>(
+				{ num_pixels, num_cameras },
+				{ py::ssize_t(sizeof(uint8_t) * num_cameras), py::ssize_t(sizeof(uint8_t)) },
+				h_results.data()
+			);
+		}, py::arg("ium_result"), py::arg("width"), py::arg("height"), py::arg("cameras"));
 
 	py::class_<OptixManager>(m, "OptixManager")
 		.def_static("instance", &OptixManager::instance,
