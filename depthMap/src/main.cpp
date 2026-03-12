@@ -45,9 +45,9 @@ namespace osc {
 		iumGenerator.render();
 
 
-		Camera camera{ vec3f(0.0f, 0.0f, 5.0f), vec3f(0.0f, 0.0f, -1.0f), vec3f(0.0f, 1.0f, 0.0f) };
+		Camera camera{ vec3f(0.0f, 0.0f, 5.0f), vec3f(0.0f, 0.0f, -1.0f), vec3f(0.0f, 1.0f, 0.0f), 45.0f, vec2i(1024, 1024) };
 		depthGenerator.setTraversable(model);
-		depthGenerator.setCamera(camera, 45.0f, vec2i(1024, 1024)); // Imposta la camera e la dimensione del frame
+		depthGenerator.setCamera(camera);
 		depthGenerator.needRenderDepth(true); // Abilita il rendering della depth map
 		depthGenerator.meedRenderPosition(true);
 		depthGenerator.needRenderNormal(true);

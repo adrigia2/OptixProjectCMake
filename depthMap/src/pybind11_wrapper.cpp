@@ -50,9 +50,22 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 	py::class_<gdt::vec3f>(m, "vec3f")
 		.def(py::init<>())
 		.def(py::init<float, float, float>())
+		.def(py::init([](py::sequence s) {
+			if (s.size() != 3) throw py::value_error("vec3f requires exactly 3 elements");
+			return gdt::vec3f(s[0].cast<float>(), s[1].cast<float>(), s[2].cast<float>());
+		}))
 		.def_readwrite("x", &gdt::vec3f::x)
 		.def_readwrite("y", &gdt::vec3f::y)
-		.def_readwrite("z", &gdt::vec3f::z);
+		.def_readwrite("z", &gdt::vec3f::z)
+		.def("__repr__", [](const gdt::vec3f& v) {
+			return "<vec3f x=" + std::to_string(v.x) + " y=" + std::to_string(v.y) + " z=" + std::to_string(v.z) + ">";
+		})
+		.def("__iter__", [](const gdt::vec3f& v) {
+			return py::iter(py::make_tuple(v.x, v.y, v.z));
+		});
+
+	py::implicitly_convertible<py::sequence, gdt::vec2i>();
+	py::implicitly_convertible<py::sequence, gdt::vec3f>();
 
 	// --- Result types: must be registered before the generators that return them ---
 
@@ -138,23 +151,29 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 			py::arg("filename"));
 
 	py::class_<Camera>(m, "Camera")
-		.def(py::init<vec3f, vec3f, vec3f>(),
-			py::arg("pos"), py::arg("forward"), py::arg("up"))
+		.def(py::init([](const gdt::vec3f& pos, const gdt::vec3f& forward, const gdt::vec3f& up,
+			float fovY, const gdt::vec2i& frameSize) {
+			return Camera(pos, forward, up, fovY, frameSize);
+		}),
+			py::arg("pos"), py::arg("forward"), py::arg("up"),
+			py::arg("fovY") = 45.0f, py::arg("frameSize") = gdt::vec2i(1024, 1024))
 		.def_property("pos", &Camera::getPos, &Camera::setPos)
 		.def_property("forward", &Camera::getForward, &Camera::setForward)
 		.def_property("up", &Camera::getUp, &Camera::setUp)
+		.def_property("fovY", &Camera::getFovY, &Camera::setFovY)
+		.def_property("frame_size", &Camera::getFrameSize, &Camera::setFrameSize)
 		.def("__repr__", [](const Camera& cam) {
 			return "<Camera pos=" + std::to_string(cam.getPos().x) + "," + std::to_string(cam.getPos().y) + "," + std::to_string(cam.getPos().z) +
 				" forward=" + std::to_string(cam.getForward().x) + "," + std::to_string(cam.getForward().y) + "," + std::to_string(cam.getForward().z) +
-				" up=" + std::to_string(cam.getUp().x) + "," + std::to_string(cam.getUp().y) + "," + std::to_string(cam.getUp().z) + ">";
+				" up=" + std::to_string(cam.getUp().x) + "," + std::to_string(cam.getUp().y) + "," + std::to_string(cam.getUp().z) +
+				" fovY=" + std::to_string(cam.getFovY()) +
+				" frameSize=" + std::to_string(cam.getFrameSize().x) + "x" + std::to_string(cam.getFrameSize().y) + ">";
 		});
 
 	py::class_<Depth_Generator>(m, "DepthGenerator")
 		.def(py::init<>())
 		.def("set_traversable", &Depth_Generator::setTraversable, py::arg("model"))
-		.def("set_camera", [](Depth_Generator& self, const Camera& camera, float fovY, gdt::vec2i frameSize) {
-			self.setCamera(camera, fovY, frameSize);
-		}, py::arg("camera"), py::arg("fovY"), py::arg("frameSize"))
+		.def("set_camera", &Depth_Generator::setCamera, py::arg("camera"))
 		.def("need_render_depth", &Depth_Generator::needRenderDepth, py::arg("isNeeded"))
 		.def("need_render_position", &Depth_Generator::meedRenderPosition, py::arg("isNeeded"))
 		.def("need_render_normal", &Depth_Generator::needRenderNormal, py::arg("isNeeded"))

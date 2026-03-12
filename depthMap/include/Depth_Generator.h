@@ -53,7 +53,7 @@ public:
 		createSBT();
 		createPipeline();
 	}
-	void setCamera(const Camera& camera, float fovY, vec2i frameSize);
+	void setCamera(const Camera& camera);
 
 	Result getResult() const { return result; }
 

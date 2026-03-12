@@ -90,8 +90,11 @@ void Depth_Generator::createHitgroupPrograms()
 	if (sizeof_log > 1) PRINT(log);
 }
 
-void Depth_Generator::setCamera(const Camera& camera, float fovY, vec2i frameSize)
+void Depth_Generator::setCamera(const Camera& camera)
 {
+	const float fovY = camera.getFovY();
+	const vec2i frameSize = camera.getFrameSize();
+
 	launchParams.camera.position = camera.getPos();
 	launchParams.camera.direction = normalize(camera.getForward());
 	launchParams.size = frameSize;
