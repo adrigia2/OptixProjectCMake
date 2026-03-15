@@ -8,6 +8,8 @@
 #include "IUM_Generator.h"
 #include "Depth_Generator.h"
 #include "Visibility_Generator.h"
+#include "ColorTex_Generator.h"
+#include "Frame.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
 
@@ -216,6 +218,63 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				h_results.data()
 			);
 		}, py::arg("ium_result"), py::arg("width"), py::arg("height"), py::arg("cameras"));
+
+	// --- Frame ---
+
+	py::class_<osc::Frame>(m, "Frame")
+		.def(py::init([](const osc::Camera& cam, float peak, py::array_t<float, py::array::c_style | py::array::forcecast> img) {
+			py::buffer_info buf = img.request();
+			if (buf.ndim != 2 || buf.shape[1] != 3)
+				throw py::value_error("Frame: image must be a (N, 3) float32 array");
+			osc::Frame f{ cam, peak, {} };
+			f.image.resize(buf.shape[0]);
+			const float* ptr = static_cast<const float*>(buf.ptr);
+			for (py::ssize_t i = 0; i < buf.shape[0]; ++i)
+				f.image[i] = gdt::vec3f(ptr[i * 3], ptr[i * 3 + 1], ptr[i * 3 + 2]);
+			return f;
+		}), py::arg("camera"), py::arg("peak"), py::arg("image"))
+		.def_readwrite("camera", &osc::Frame::camera)
+		.def_readwrite("peak",   &osc::Frame::peak);
+
+	// --- ColorTexResult ---
+
+	py::class_<osc::ColorTex_Generator::Result>(m, "ColorTexResult")
+		.def_property_readonly("colors_np", [](osc::ColorTex_Generator::Result& r) {
+			using gdt::vec3f;
+			py::ssize_t n = static_cast<py::ssize_t>(r.colors.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.colors.data()),
+				base
+			);
+		});
+
+	// --- ColorTexGenerator ---
+
+	py::class_<osc::ColorTex_Generator>(m, "ColorTexGenerator")
+		.def(py::init<>())
+		.def("set_inputs", [](osc::ColorTex_Generator& self,
+				const IUM_Generator::Result& ium_res,
+				py::array_t<uint8_t, py::array::c_style | py::array::forcecast> visibility,
+				py::list frames_list) {
+			py::buffer_info vbuf = visibility.request();
+			std::vector<uint8_t> vis_vec(
+				static_cast<uint8_t*>(vbuf.ptr),
+				static_cast<uint8_t*>(vbuf.ptr) + vbuf.size);
+
+			std::vector<osc::Frame> frames;
+			frames.reserve(frames_list.size());
+			for (auto item : frames_list)
+				frames.push_back(item.cast<osc::Frame>());
+
+			self.setInputs(ium_res, vis_vec, frames);
+		}, py::arg("ium_result"), py::arg("visibility"), py::arg("frames"))
+		.def("render", &osc::ColorTex_Generator::render)
+		.def("get_result", [](osc::ColorTex_Generator& self) -> osc::ColorTex_Generator::Result {
+			return self.getResult();
+		}, py::return_value_policy::move);
 
 	py::class_<OptixManager>(m, "OptixManager")
 		.def_static("instance", &OptixManager::instance,

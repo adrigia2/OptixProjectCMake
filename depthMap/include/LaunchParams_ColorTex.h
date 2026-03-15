@@ -1,0 +1,40 @@
+#pragma once
+
+#include "gdt/math/vec.h"
+
+namespace osc {
+    using namespace gdt;
+
+    // Per-camera data uploaded to GPU.
+    // 'right' and 'up_vec' are pre-scaled unit vectors such that:
+    //   dot(d, right)  / t  in [-0.5, +0.5]  spans the full horizontal extent
+    //   dot(d, up_vec) / t  in [-0.5, +0.5]  spans the full vertical extent
+    // Adding 0.5 gives UV in [0, 1] for pixels inside the frame.
+    struct ColorCameraDef {
+        vec3f  position;
+        vec3f  forward;
+        vec3f  right;    // normalize(cross(forward, up)) / (2 * halfWidth)
+        vec3f  up_vec;   // normalize(cross(right_unit, forward)) / (2 * halfHeight)
+        vec2i  frame_size;
+        float  peak;
+        vec3f* image_ptr; // device pointer to flat image (frame_size.x * frame_size.y)
+    };
+
+    struct LaunchParams_ColorTex {
+        // IUM input
+        vec3f*   ium_positions;
+        uint8_t* ium_masks;
+        int      num_pixels;
+
+        // Visibility: shape [num_pixels * num_cameras]
+        uint8_t* visibility;
+
+        // Cameras + images
+        ColorCameraDef* cameras;
+        int             num_cameras;
+
+        // Output: shape [num_pixels]
+        vec3f* color_output;
+    };
+
+} // namespace osc

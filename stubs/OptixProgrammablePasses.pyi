@@ -7,7 +7,20 @@ import enum
 import numpy
 import numpy.typing
 import typing
-__all__: list[str] = ['Camera', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'IUMGenerator', 'IUMResult', 'LogLevel', 'LogManager', 'OptixManager', 'TriangleMesh', 'Verbose', 'Warning', 'vec2i', 'vec3f']
+__all__: list[str] = ['Camera', 'ColorTexGenerator', 'ColorTexResult', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'Frame', 'IUMGenerator', 'IUMResult', 'LogLevel', 'LogManager', 'OptixManager', 'TriangleMesh', 'Verbose', 'Warning', 'vec2i', 'vec3f']
+class ColorTexGenerator:
+    def __init__(self) -> None:
+        ...
+    def get_result(self) -> ColorTexResult:
+        ...
+    def render(self) -> None:
+        ...
+    def set_inputs(self, ium_result: IUMResult, visibility: numpy.typing.NDArray[numpy.uint8], frames: list) -> None:
+        ...
+class ColorTexResult:
+    @property
+    def colors_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
 class Camera:
     forward: vec3f
     pos: vec3f
@@ -15,6 +28,11 @@ class Camera:
     def __init__(self, pos: vec3f, forward: vec3f, up: vec3f) -> None:
         ...
     def __repr__(self) -> str:
+        ...
+class Frame:
+    camera: Camera
+    peak: float
+    def __init__(self, camera: Camera, peak: float, image: numpy.typing.NDArray[numpy.float32]) -> None:
         ...
 class DepthGenerator:
     def __init__(self) -> None:

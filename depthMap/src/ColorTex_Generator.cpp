@@ -1,0 +1,145 @@
+#include "ColorTex_Generator.h"
+#include <optix_stubs.h>
+#include "LogManager.h"
+#include "OptixManager.h"
+#include <cmath>
+#include <stdexcept>
+
+extern "C" char embedded_ptx_code_colortex[];
+
+namespace osc {
+
+char* ColorTex_Generator::getPtxCode() {
+    return embedded_ptx_code_colortex;
+}
+
+void ColorTex_Generator::createRaygenPrograms() {
+    raygenPGs.resize(1);
+    OptixProgramGroupOptions pgOptions = {};
+    OptixProgramGroupDesc pgDesc = {};
+    pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+    pgDesc.raygen.module = module;
+    pgDesc.raygen.entryFunctionName = "__raygen__colorTex";
+    OPTIX_CHECK(optixProgramGroupCreate(OptixManager::instance().getContext(),
+        &pgDesc, 1, &pgOptions, nullptr, nullptr, &raygenPGs[0]));
+}
+
+void ColorTex_Generator::createMissPrograms() {
+    missPGs.resize(1);
+    OptixProgramGroupOptions pgOptions = {};
+    OptixProgramGroupDesc pgDesc = {};
+    pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
+    pgDesc.miss.module = module;
+    pgDesc.miss.entryFunctionName = "__miss__colorTex";
+    OPTIX_CHECK(optixProgramGroupCreate(OptixManager::instance().getContext(),
+        &pgDesc, 1, &pgOptions, nullptr, nullptr, &missPGs[0]));
+}
+
+void ColorTex_Generator::createHitgroupPrograms() {
+    hitgroupPGs.resize(1);
+    OptixProgramGroupOptions pgOptions = {};
+    OptixProgramGroupDesc pgDesc = {};
+    pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+    pgDesc.hitgroup.moduleCH = module;
+    pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__colorTex";
+    OPTIX_CHECK(optixProgramGroupCreate(OptixManager::instance().getContext(),
+        &pgDesc, 1, &pgOptions, nullptr, nullptr, &hitgroupPGs[0]));
+}
+
+void ColorTex_Generator::setInputs(
+    const IUM_Generator::Result& ium,
+    const std::vector<uint8_t>&  visibility,
+    const std::vector<Frame>&    frames)
+{
+    int num_pixels  = (int)ium.positions.size();
+    int num_cameras = (int)frames.size();
+
+    if (num_pixels == 0 || num_cameras == 0)
+        throw std::runtime_error("ColorTex_Generator::setInputs: empty IUM or frames");
+
+    if ((int)visibility.size() != num_pixels * num_cameras)
+        throw std::runtime_error("ColorTex_Generator::setInputs: visibility size mismatch");
+
+    iumPositionsBuffer.alloc_and_upload(ium.positions);
+    iumMasksBuffer.alloc_and_upload(ium.masks);
+    visibilityBuffer.alloc_and_upload(visibility);
+
+    // Build per-camera GPU structs and upload images
+    imageBuffers.clear();
+    imageBuffers.resize(num_cameras);
+    std::vector<ColorCameraDef> camDefs(num_cameras);
+
+    for (int i = 0; i < num_cameras; ++i) {
+        const Camera& cam  = frames[i].camera;
+        const float   fovY = cam.getFovY();
+        const vec2i   fs   = cam.getFrameSize();
+        const float   aspect     = fs.x / float(fs.y);
+        const float   halfHeight = tanf(0.5f * fovY);
+        const float   halfWidth  = halfHeight * aspect;
+
+        vec3f fwd = normalize(cam.getForward());
+        // Same convention as Depth_Generator::setCamera
+        vec3f right_unit = normalize(cross(fwd, cam.getUp()));
+        vec3f up_unit    = normalize(cross(right_unit, fwd));
+
+        // Pre-scale: dot(d, right)/t in [-0.5, +0.5] over the horizontal span
+        camDefs[i].position   = cam.getPos();
+        camDefs[i].forward    = fwd;
+        camDefs[i].right      = right_unit / (2.0f * halfWidth);
+        camDefs[i].up_vec     = up_unit    / (2.0f * halfHeight);
+        camDefs[i].frame_size = fs;
+        camDefs[i].peak       = frames[i].peak;
+
+        imageBuffers[i].alloc_and_upload(frames[i].image);
+        camDefs[i].image_ptr = (vec3f*)imageBuffers[i].d_pointer();
+    }
+
+    camerasBuffer.alloc_and_upload(camDefs);
+
+    colorOutputBuffer.alloc(num_pixels * sizeof(vec3f));
+    cudaMemset((void*)colorOutputBuffer.d_pointer(), 0, num_pixels * sizeof(vec3f));
+
+    launchParams.ium_positions = (vec3f*)iumPositionsBuffer.d_pointer();
+    launchParams.ium_masks     = (uint8_t*)iumMasksBuffer.d_pointer();
+    launchParams.num_pixels    = num_pixels;
+    launchParams.visibility    = (uint8_t*)visibilityBuffer.d_pointer();
+    launchParams.cameras       = (ColorCameraDef*)camerasBuffer.d_pointer();
+    launchParams.num_cameras   = num_cameras;
+    launchParams.color_output  = (vec3f*)colorOutputBuffer.d_pointer();
+}
+
+void ColorTex_Generator::render() {
+    if (launchParams.num_pixels == 0)
+        throw std::runtime_error("ColorTex_Generator::render: call setInputs first");
+
+    launchParamsBuffer.alloc(sizeof(launchParams));
+    launchParamsBuffer.upload(&launchParams, 1);
+
+    OPTIX_CHECK(optixLaunch(pipeline, 0,
+        launchParamsBuffer.d_pointer(),
+        launchParamsBuffer.sizeInBytes,
+        &sbt,
+        launchParams.num_pixels, // width
+        1,                       // height
+        1                        // depth
+    ));
+
+    CUDA_SYNC_CHECK();
+
+    result.colors.resize(launchParams.num_pixels);
+    colorOutputBuffer.download(result.colors.data(), result.colors.size());
+}
+
+void ColorTex_Generator::cleanup() {
+    OptixActor::cleanup();
+    iumPositionsBuffer.free();
+    iumMasksBuffer.free();
+    visibilityBuffer.free();
+    camerasBuffer.free();
+    for (auto& buf : imageBuffers)
+        buf.free();
+    imageBuffers.clear();
+    colorOutputBuffer.free();
+}
+
+} // namespace osc
