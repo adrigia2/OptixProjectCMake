@@ -46,7 +46,7 @@ extern "C" __global__ void __raygen__colorTex()
             if (t > 0.f) {
                 // UV in [0, 1] when inside the frustum
                 const float uv_x = dot(d, cam.right)  / t + 0.5f;
-                const float uv_y = dot(d, cam.up_vec) / t + 0.5f;
+                const float uv_y = 0.5f - dot(d, cam.up_vec) / t;
 
                 if (uv_x >= 0.f && uv_x < 1.f && uv_y >= 0.f && uv_y < 1.f) {
                     const int px = (int)(uv_x * cam.frame_size.x);
