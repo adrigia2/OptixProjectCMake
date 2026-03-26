@@ -99,6 +99,9 @@ void ColorTex_Generator::setInputs(
     colorOutputBuffer.alloc(num_pixels * sizeof(vec3f));
     cudaMemset((void*)colorOutputBuffer.d_pointer(), 0, num_pixels * sizeof(vec3f));
 
+    colorMinOutputBuffer.alloc_and_upload(std::vector<vec3f>(num_pixels, {0.f, 0.f, 0.f}));
+    colorMaxOutputBuffer.alloc_and_upload(std::vector<vec3f>(num_pixels, {0.f, 0.f, 0.f}));
+
     cameraColorOutputBuffer.alloc(num_pixels * num_cameras * sizeof(vec3f));
     cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0,
                num_pixels * num_cameras * sizeof(vec3f));
@@ -110,6 +113,8 @@ void ColorTex_Generator::setInputs(
     launchParams.cameras              = (ColorCameraDef*)camerasBuffer.d_pointer();
     launchParams.num_cameras          = num_cameras;
     launchParams.color_output         = (vec3f*)colorOutputBuffer.d_pointer();
+    launchParams.color_min_output     = (vec3f*)colorMinOutputBuffer.d_pointer();
+    launchParams.color_max_output     = (vec3f*)colorMaxOutputBuffer.d_pointer();
     launchParams.camera_color_output  = (vec3f*)cameraColorOutputBuffer.d_pointer();
 }
 
@@ -134,6 +139,12 @@ void ColorTex_Generator::render() {
     result.colors.resize(launchParams.num_pixels);
     colorOutputBuffer.download(result.colors.data(), result.colors.size());
 
+    result.color_min.resize(launchParams.num_pixels);
+    colorMinOutputBuffer.download(result.color_min.data(), launchParams.num_pixels);
+
+    result.color_max.resize(launchParams.num_pixels);
+    colorMaxOutputBuffer.download(result.color_max.data(), launchParams.num_pixels);
+
     int total = launchParams.num_pixels * launchParams.num_cameras;
     result.camera_colors.resize(total);
     cameraColorOutputBuffer.download(result.camera_colors.data(), total);
@@ -150,6 +161,8 @@ void ColorTex_Generator::cleanup() {
         buf.free();
     imageBuffers.clear();
     colorOutputBuffer.free();
+    colorMinOutputBuffer.free();
+    colorMaxOutputBuffer.free();
     cameraColorOutputBuffer.free();
 }
 

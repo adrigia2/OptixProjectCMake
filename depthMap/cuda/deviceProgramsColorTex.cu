@@ -1,4 +1,5 @@
 #include <optix_device.h>
+#include <float.h>
 #include "LaunchParams_ColorTex.h"
 
 using namespace osc;
@@ -19,7 +20,9 @@ extern "C" __global__ void __raygen__colorTex()
 
     // Skip IUM pixels not on the mesh
     if (optixLaunchParams.ium_masks[idx] == 0) {
-        optixLaunchParams.color_output[idx] = vec3f(0.f, 0.f, 0.f);
+        optixLaunchParams.color_output[idx]     = vec3f(0.f, 0.f, 0.f);
+        optixLaunchParams.color_min_output[idx] = vec3f(0.f, 0.f, 0.f);
+        optixLaunchParams.color_max_output[idx] = vec3f(0.f, 0.f, 0.f);
         const int num_cameras_early = optixLaunchParams.num_cameras;
         for (int k = 0; k < num_cameras_early; ++k)
             optixLaunchParams.camera_color_output[idx * num_cameras_early + k] = vec3f(0.f, 0.f, 0.f);
@@ -31,6 +34,8 @@ extern "C" __global__ void __raygen__colorTex()
 
     vec3f sum  = vec3f(0.f, 0.f, 0.f);
     int   count = 0;
+    vec3f local_min = {FLT_MAX, FLT_MAX, FLT_MAX};
+    vec3f local_max = {0.f, 0.f, 0.f};
 
     for (int k = 0; k < num_cameras; ++k) {
         vec3f cam_color = vec3f(0.f, 0.f, 0.f);
@@ -62,6 +67,12 @@ extern "C" __global__ void __raygen__colorTex()
                             sum.x += color.x;
                             sum.y += color.y;
                             sum.z += color.z;
+                            local_min.x = fminf(local_min.x, color.x);
+                            local_min.y = fminf(local_min.y, color.y);
+                            local_min.z = fminf(local_min.z, color.z);
+                            local_max.x = fmaxf(local_max.x, color.x);
+                            local_max.y = fmaxf(local_max.y, color.y);
+                            local_max.z = fmaxf(local_max.z, color.z);
                             ++count;
                         }
                     }
@@ -74,9 +85,13 @@ extern "C" __global__ void __raygen__colorTex()
 
     if (count > 0) {
         const float inv = 1.0f / float(count);
-        optixLaunchParams.color_output[idx] = vec3f(sum.x * inv, sum.y * inv, sum.z * inv);
+        optixLaunchParams.color_output[idx]     = vec3f(sum.x * inv, sum.y * inv, sum.z * inv);
+        optixLaunchParams.color_min_output[idx] = local_min;
+        optixLaunchParams.color_max_output[idx] = local_max;
     } else {
-        optixLaunchParams.color_output[idx] = vec3f(0.f, 0.f, 0.f);
+        optixLaunchParams.color_output[idx]     = vec3f(0.f, 0.f, 0.f);
+        optixLaunchParams.color_min_output[idx] = vec3f(0.f, 0.f, 0.f);
+        optixLaunchParams.color_max_output[idx] = vec3f(0.f, 0.f, 0.f);
     }
 }
 

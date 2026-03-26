@@ -35,6 +35,8 @@ namespace osc {
 
         // Output: shape [num_pixels]
         vec3f* color_output;
+        vec3f* color_min_output;    // per-texel minimum color across cameras
+        vec3f* color_max_output;    // per-texel maximum color across cameras
         // Output: per-camera, shape [num_pixels * num_cameras]
         vec3f* camera_color_output;
     };

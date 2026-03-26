@@ -83,7 +83,7 @@ namespace vis {
             cam.position,
             ray_dir,
             0.0f,               // tmin
-            distance - 1e-4f,   // tmax
+            distance - 1e-3f,   // tmax
             0.0f,               // rayTime
             OptixVisibilityMask(255),
             OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT, // shadow ray flags
