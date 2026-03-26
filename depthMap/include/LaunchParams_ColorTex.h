@@ -35,6 +35,8 @@ namespace osc {
 
         // Output: shape [num_pixels]
         vec3f* color_output;
+        // Output: per-camera, shape [num_pixels * num_cameras]
+        vec3f* camera_color_output;
     };
 
 } // namespace osc

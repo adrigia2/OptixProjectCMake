@@ -249,6 +249,21 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				reinterpret_cast<float*>(r.colors.data()),
 				base
 			);
+		})
+		.def_property_readonly("camera_colors_np", [](osc::ColorTex_Generator::Result& r) {
+			using gdt::vec3f;
+			py::ssize_t n  = static_cast<py::ssize_t>(r.num_cameras > 0
+			                   ? r.camera_colors.size() / r.num_cameras : 0);
+			py::ssize_t nc = static_cast<py::ssize_t>(r.num_cameras);
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, nc, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(vec3f)) * nc,
+				  py::ssize_t(sizeof(vec3f)),
+				  py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.camera_colors.data()),
+				base
+			);
 		});
 
 	// --- ColorTexGenerator ---

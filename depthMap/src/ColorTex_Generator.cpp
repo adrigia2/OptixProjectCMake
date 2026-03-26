@@ -99,13 +99,18 @@ void ColorTex_Generator::setInputs(
     colorOutputBuffer.alloc(num_pixels * sizeof(vec3f));
     cudaMemset((void*)colorOutputBuffer.d_pointer(), 0, num_pixels * sizeof(vec3f));
 
-    launchParams.ium_positions = (vec3f*)iumPositionsBuffer.d_pointer();
-    launchParams.ium_masks     = (uint8_t*)iumMasksBuffer.d_pointer();
-    launchParams.num_pixels    = num_pixels;
-    launchParams.visibility    = (uint8_t*)visibilityBuffer.d_pointer();
-    launchParams.cameras       = (ColorCameraDef*)camerasBuffer.d_pointer();
-    launchParams.num_cameras   = num_cameras;
-    launchParams.color_output  = (vec3f*)colorOutputBuffer.d_pointer();
+    cameraColorOutputBuffer.alloc(num_pixels * num_cameras * sizeof(vec3f));
+    cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0,
+               num_pixels * num_cameras * sizeof(vec3f));
+
+    launchParams.ium_positions        = (vec3f*)iumPositionsBuffer.d_pointer();
+    launchParams.ium_masks            = (uint8_t*)iumMasksBuffer.d_pointer();
+    launchParams.num_pixels           = num_pixels;
+    launchParams.visibility           = (uint8_t*)visibilityBuffer.d_pointer();
+    launchParams.cameras              = (ColorCameraDef*)camerasBuffer.d_pointer();
+    launchParams.num_cameras          = num_cameras;
+    launchParams.color_output         = (vec3f*)colorOutputBuffer.d_pointer();
+    launchParams.camera_color_output  = (vec3f*)cameraColorOutputBuffer.d_pointer();
 }
 
 void ColorTex_Generator::render() {
@@ -128,6 +133,11 @@ void ColorTex_Generator::render() {
 
     result.colors.resize(launchParams.num_pixels);
     colorOutputBuffer.download(result.colors.data(), result.colors.size());
+
+    int total = launchParams.num_pixels * launchParams.num_cameras;
+    result.camera_colors.resize(total);
+    cameraColorOutputBuffer.download(result.camera_colors.data(), total);
+    result.num_cameras = launchParams.num_cameras;
 }
 
 void ColorTex_Generator::cleanup() {
@@ -140,6 +150,7 @@ void ColorTex_Generator::cleanup() {
         buf.free();
     imageBuffers.clear();
     colorOutputBuffer.free();
+    cameraColorOutputBuffer.free();
 }
 
 } // namespace osc

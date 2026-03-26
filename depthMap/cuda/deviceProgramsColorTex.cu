@@ -20,6 +20,9 @@ extern "C" __global__ void __raygen__colorTex()
     // Skip IUM pixels not on the mesh
     if (optixLaunchParams.ium_masks[idx] == 0) {
         optixLaunchParams.color_output[idx] = vec3f(0.f, 0.f, 0.f);
+        const int num_cameras_early = optixLaunchParams.num_cameras;
+        for (int k = 0; k < num_cameras_early; ++k)
+            optixLaunchParams.camera_color_output[idx * num_cameras_early + k] = vec3f(0.f, 0.f, 0.f);
         return;
     }
 
@@ -30,38 +33,43 @@ extern "C" __global__ void __raygen__colorTex()
     int   count = 0;
 
     for (int k = 0; k < num_cameras; ++k) {
+        vec3f cam_color = vec3f(0.f, 0.f, 0.f);
+
         // Skip occluded cameras
-        if (optixLaunchParams.visibility[idx * num_cameras + k] == 0)
-            continue;
+        if (optixLaunchParams.visibility[idx * num_cameras + k] != 0) {
+            const ColorCameraDef& cam = optixLaunchParams.cameras[k];
 
-        const ColorCameraDef& cam = optixLaunchParams.cameras[k];
+            // Perspective projection
+            const vec3f d = pos - cam.position;
+            const float t = dot(d, cam.forward);
 
-        // Perspective projection
-        const vec3f d = pos - cam.position;
-        const float t = dot(d, cam.forward);
-        if (t <= 0.f) continue;
+            if (t > 0.f) {
+                // UV in [0, 1] when inside the frustum
+                const float uv_x = dot(d, cam.right)  / t + 0.5f;
+                const float uv_y = dot(d, cam.up_vec) / t + 0.5f;
 
-        // UV in [0, 1] when inside the frustum
-        const float uv_x = dot(d, cam.right)  / t + 0.5f;
-        const float uv_y = dot(d, cam.up_vec) / t + 0.5f;
+                if (uv_x >= 0.f && uv_x < 1.f && uv_y >= 0.f && uv_y < 1.f) {
+                    const int px = (int)(uv_x * cam.frame_size.x);
+                    const int py = (int)(uv_y * cam.frame_size.y);
 
-        if (uv_x < 0.f || uv_x >= 1.f || uv_y < 0.f || uv_y >= 1.f) continue;
+                    if (px >= 0 && px < cam.frame_size.x && py >= 0 && py < cam.frame_size.y) {
+                        const vec3f color = cam.image_ptr[py * cam.frame_size.x + px];
 
-        const int px = (int)(uv_x * cam.frame_size.x);
-        const int py = (int)(uv_y * cam.frame_size.y);
+                        // Discard overexposed pixels
+                        const float max_val = fmaxf(color.x, fmaxf(color.y, color.z));
+                        if (max_val < cam.peak) {
+                            cam_color = color;
+                            sum.x += color.x;
+                            sum.y += color.y;
+                            sum.z += color.z;
+                            ++count;
+                        }
+                    }
+                }
+            }
+        }
 
-        if (px < 0 || px >= cam.frame_size.x || py < 0 || py >= cam.frame_size.y) continue;
-
-        const vec3f color = cam.image_ptr[py * cam.frame_size.x + px];
-
-        // Discard overexposed pixels
-        const float max_val = fmaxf(color.x, fmaxf(color.y, color.z));
-        if (max_val >= cam.peak) continue;
-
-        sum.x += color.x;
-        sum.y += color.y;
-        sum.z += color.z;
-        ++count;
+        optixLaunchParams.camera_color_output[idx * num_cameras + k] = cam_color;
     }
 
     if (count > 0) {
