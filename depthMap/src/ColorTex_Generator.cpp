@@ -101,6 +101,8 @@ void ColorTex_Generator::setInputs(
 
     colorMinOutputBuffer.alloc_and_upload(std::vector<vec3f>(num_pixels, {0.f, 0.f, 0.f}));
     colorMaxOutputBuffer.alloc_and_upload(std::vector<vec3f>(num_pixels, {0.f, 0.f, 0.f}));
+    colorVarianceOutputBuffer.alloc(num_pixels * sizeof(vec3f));
+    cudaMemset((void*)colorVarianceOutputBuffer.d_pointer(), 0, num_pixels * sizeof(vec3f));
 
     cameraColorOutputBuffer.alloc(num_pixels * num_cameras * sizeof(vec3f));
     cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0,
@@ -113,9 +115,10 @@ void ColorTex_Generator::setInputs(
     launchParams.cameras              = (ColorCameraDef*)camerasBuffer.d_pointer();
     launchParams.num_cameras          = num_cameras;
     launchParams.color_output         = (vec3f*)colorOutputBuffer.d_pointer();
-    launchParams.color_min_output     = (vec3f*)colorMinOutputBuffer.d_pointer();
-    launchParams.color_max_output     = (vec3f*)colorMaxOutputBuffer.d_pointer();
-    launchParams.camera_color_output  = (vec3f*)cameraColorOutputBuffer.d_pointer();
+    launchParams.color_min_output      = (vec3f*)colorMinOutputBuffer.d_pointer();
+    launchParams.color_max_output      = (vec3f*)colorMaxOutputBuffer.d_pointer();
+    launchParams.color_variance_output = (vec3f*)colorVarianceOutputBuffer.d_pointer();
+    launchParams.camera_color_output   = (vec3f*)cameraColorOutputBuffer.d_pointer();
 }
 
 void ColorTex_Generator::render() {
@@ -145,6 +148,9 @@ void ColorTex_Generator::render() {
     result.color_max.resize(launchParams.num_pixels);
     colorMaxOutputBuffer.download(result.color_max.data(), launchParams.num_pixels);
 
+    result.color_variance.resize(launchParams.num_pixels);
+    colorVarianceOutputBuffer.download(result.color_variance.data(), launchParams.num_pixels);
+
     int total = launchParams.num_pixels * launchParams.num_cameras;
     result.camera_colors.resize(total);
     cameraColorOutputBuffer.download(result.camera_colors.data(), total);
@@ -163,6 +169,7 @@ void ColorTex_Generator::cleanup() {
     colorOutputBuffer.free();
     colorMinOutputBuffer.free();
     colorMaxOutputBuffer.free();
+    colorVarianceOutputBuffer.free();
     cameraColorOutputBuffer.free();
 }
 

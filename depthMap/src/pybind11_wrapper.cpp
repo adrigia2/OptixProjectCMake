@@ -286,6 +286,17 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				reinterpret_cast<const float*>(r.color_max.data()),
 				base
 			);
+		})
+		.def_property_readonly("color_variance_np", [](osc::ColorTex_Generator::Result& r) {
+			using gdt::vec3f;
+			py::ssize_t n = static_cast<py::ssize_t>(r.color_variance.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<const float*>(r.color_variance.data()),
+				base
+			);
 		});
 
 	// --- ColorTexGenerator ---

@@ -11,10 +11,11 @@ namespace osc {
 class ColorTex_Generator : public OptixActor {
 public:
     struct Result {
-        std::vector<vec3f> colors;         // size = num_pixels
-        std::vector<vec3f> camera_colors;  // size = num_pixels * num_cameras
-        std::vector<vec3f> color_min;      // size = num_pixels
-        std::vector<vec3f> color_max;      // size = num_pixels
+        std::vector<vec3f> colors;          // size = num_pixels
+        std::vector<vec3f> camera_colors;   // size = num_pixels * num_cameras
+        std::vector<vec3f> color_min;       // size = num_pixels
+        std::vector<vec3f> color_max;       // size = num_pixels
+        std::vector<vec3f> color_variance;  // size = num_pixels, per-channel variance across cameras
         int                num_cameras = 0;
     };
 
@@ -55,6 +56,7 @@ private:
     CUDABuffer              colorOutputBuffer;
     CUDABuffer              colorMinOutputBuffer;
     CUDABuffer              colorMaxOutputBuffer;
+    CUDABuffer              colorVarianceOutputBuffer;
     CUDABuffer              cameraColorOutputBuffer;
     Result                  result;
 };
