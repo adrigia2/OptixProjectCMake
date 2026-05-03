@@ -103,12 +103,15 @@ void IUM_Generator::render()
 		dimension);
 
 	result.positions.clear();
+	result.normals.clear();
 	result.masks.clear();
 
 	result.positions.resize(dimension);
+	result.normals.resize(dimension);
 	result.masks.resize(dimension);
 
 	positionsBuffer.download(result.positions.data(), dimension);
+	normalsBuffer.download(result.normals.data(), dimension);
 	masksBuffer.download(result.masks.data(), dimension);
 }
 
@@ -116,6 +119,7 @@ void IUM_Generator::cleanup()
 {
 	OptixActor::cleanup();
 	positionsBuffer.free();
+	normalsBuffer.free();
 	masksBuffer.free();
 	worldVertexBuffer.free();
 	uvCoordBuffer.free();
@@ -135,7 +139,7 @@ void IUM_Generator::setTraversable(const TriangleMesh& model)
 	uvCoordBuffer.alloc_and_upload(model.texcoord);
 	launchParams.data.uvVertices = (vec2f*)uvCoordBuffer.d_pointer();
 
-	// NUOVO: Passa gli indici (già caricati in buildAccel)
+	// NUOVO: Passa gli indici (giï¿½ caricati in buildAccel)
 	launchParams.data.indices = (vec3i*)indexBuffer.d_pointer();
 	launchParams.data.numTriangles = (uint32_t)model.index.size();
 
@@ -147,10 +151,12 @@ void IUM_Generator::setTextureSize(vec2i size)
 {
 	int dimension = size.x * size.y;
 	positionsBuffer.resize(dimension * sizeof(vec3f));
+	normalsBuffer.resize(dimension * sizeof(vec3f));
 	masksBuffer.resize(dimension * sizeof(uint8_t));
 
 	launchParams.size = size;
 	launchParams.results.positions = (vec3f*)positionsBuffer.d_pointer();
+	launchParams.results.normals = (vec3f*)normalsBuffer.d_pointer();
 	launchParams.results.masks = (uint8_t*)masksBuffer.d_pointer();
 
 	LogManager::Log("IUM texture size set to %u x %u", size.x, size.y);
@@ -212,7 +218,7 @@ void IUM_Generator::printStatus()
 //    for (uint32_t y = 0; y < height; y++) {
 //        for (uint32_t x = 0; x < width; x++) {
 //            const uint32_t srcIdx = x + y * width;
-//            // BMP è bottom-up, ma scriviamo riga per riga quindi non invertiamo qui
+//            // BMP ï¿½ bottom-up, ma scriviamo riga per riga quindi non invertiamo qui
 //            const uint32_t dstIdx = (x + y * width) * 3;
 //            
 //            if (masks[srcIdx] == 1) {

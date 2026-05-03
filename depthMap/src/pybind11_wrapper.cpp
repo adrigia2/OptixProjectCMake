@@ -9,6 +9,7 @@
 #include "Depth_Generator.h"
 #include "Visibility_Generator.h"
 #include "ColorTex_Generator.h"
+#include "Irradiance_Generator.h"
 #include "Frame.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
@@ -122,6 +123,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 
 	py::class_<IUM_Generator::Result>(m, "IUMResult")
 		.def("has_positions", &IUM_Generator::Result::hasPositions)
+		.def("has_normals", &IUM_Generator::Result::hasNormals)
 		.def("has_masks", &IUM_Generator::Result::hasMasks)
 		.def_property_readonly("positions_np", [](IUM_Generator::Result& r) {
 			using gdt::vec3f;
@@ -131,6 +133,17 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				{ n, py::ssize_t(3) },
 				{ py::ssize_t(sizeof(vec3f)), py::ssize_t(sizeof(float)) },
 				reinterpret_cast<float*>(r.positions.data()),
+				base
+			);
+		})
+		.def_property_readonly("normals_np", [](IUM_Generator::Result& r) {
+			using gdt::vec3f;
+			py::ssize_t n = static_cast<py::ssize_t>(r.normals.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.normals.data()),
 				base
 			);
 		})
@@ -321,6 +334,46 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		}, py::arg("ium_result"), py::arg("visibility"), py::arg("frames"))
 		.def("render", &osc::ColorTex_Generator::render)
 		.def("get_result", [](osc::ColorTex_Generator& self) -> osc::ColorTex_Generator::Result {
+			return self.getResult();
+		}, py::return_value_policy::move);
+
+	// --- IrradianceResult / IrradianceGenerator ---
+
+	py::class_<osc::Irradiance_Generator::Result>(m, "IrradianceResult")
+		.def("has_irradiance", &osc::Irradiance_Generator::Result::hasIrradiance)
+		.def_property_readonly("irradiance_np", [](osc::Irradiance_Generator::Result& r) {
+			using gdt::vec3f;
+			py::ssize_t n = static_cast<py::ssize_t>(r.irradiance.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.irradiance.data()),
+				base
+			);
+		});
+
+	py::class_<osc::Irradiance_Generator>(m, "IrradianceGenerator")
+		.def(py::init<>())
+		.def("set_traversable", &osc::Irradiance_Generator::setTraversable, py::arg("model"))
+		.def("set_inputs", [](osc::Irradiance_Generator& self,
+				const IUM_Generator::Result& ium_res,
+				py::array_t<float, py::array::c_style | py::array::forcecast> skybox,
+				gdt::vec2i skybox_size,
+				int sample_side) {
+			py::buffer_info b = skybox.request();
+			if (b.ndim != 2 || b.shape[1] != 3)
+				throw py::value_error("skybox must be a (H*W, 3) float32 array");
+
+			std::vector<gdt::vec3f> sky(b.shape[0]);
+			const float* p = static_cast<const float*>(b.ptr);
+			for (py::ssize_t i = 0; i < b.shape[0]; ++i)
+				sky[i] = gdt::vec3f(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+
+			self.setInputs(ium_res, sky, skybox_size, sample_side);
+		}, py::arg("ium_result"), py::arg("skybox"), py::arg("skybox_size"), py::arg("sample_side"))
+		.def("render", &osc::Irradiance_Generator::render)
+		.def("get_result", [](osc::Irradiance_Generator& self) -> osc::Irradiance_Generator::Result {
 			return self.getResult();
 		}, py::return_value_policy::move);
 

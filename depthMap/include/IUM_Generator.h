@@ -18,8 +18,10 @@ public:
 	struct Result
 	{
 		std::vector<vec3f> positions; // Posizioni 3D reali dei vertici
+		std::vector<vec3f> normals;   // Normali di faccia per texel
 		std::vector<uint8_t> masks;    // Maschere per i pixel validi
 		bool hasPositions() const { return !positions.empty(); }
+		bool hasNormals() const { return !normals.empty(); }
 		bool hasMasks() const { return !masks.empty(); }
 	};
 
@@ -49,13 +51,14 @@ public:
 protected:
 	OptixTraversableHandle createGAS(const TriangleMesh& model) override;
 
-	CUDABuffer vertexBuffer;     // Già esistente - per la GAS in UV space
-	CUDABuffer indexBuffer;        // Già esistente
-	CUDABuffer asBuffer;           // Già esistente
+	CUDABuffer vertexBuffer;     // Giï¿½ esistente - per la GAS in UV space
+	CUDABuffer indexBuffer;        // Giï¿½ esistente
+	CUDABuffer asBuffer;           // Giï¿½ esistente
 
 	// result buffers per la raygen program
-	CUDABuffer positionsBuffer;    // Già esistente
-	CUDABuffer masksBuffer;        // Già esistente
+	CUDABuffer positionsBuffer;    // Giï¿½ esistente
+	CUDABuffer normalsBuffer;      // Normali di faccia per texel
+	CUDABuffer masksBuffer;        // Giï¿½ esistente
 	
 	// NUOVI BUFFERS per inverse UV mapping
 	CUDABuffer worldVertexBuffer;  // Vertici 3D reali del modello

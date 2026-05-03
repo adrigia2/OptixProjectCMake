@@ -38,6 +38,7 @@ using namespace osc;
 
 	struct IUMPayload {
 		vec3f position;
+		vec3f normal;
 		uint8_t mask;
 	};
 
@@ -62,13 +63,14 @@ using namespace osc;
 		// Inizializza il payload
 		IUMPayload prd;
 		prd.position = vec3f(0.f);
+		prd.normal = vec3f(0.f);
 		prd.mask = 0;
 
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
 		// Lancia un ray nella GAS in UV space
-		// La GAS è costruita con vertici (u, v, 0), quindi lanciamo un ray
+		// La GAS ï¿½ costruita con vertici (u, v, 0), quindi lanciamo un ray
 		// che parte da (pixelUV.x, pixelUV.y, 1) e va verso -Z
 		vec3f rayOrigin = vec3f(pixelUV.x, pixelUV.y, 1.0f);
 		vec3f rayDirection = vec3f(0.f, 0.f, -1.f);
@@ -89,6 +91,7 @@ using namespace osc;
 		// Scrivi risultato nei buffer di output
 		const uint32_t index = ix + iy * size.x;
 		optixLaunchParams.results.positions[index] = prd.position;
+		optixLaunchParams.results.normals[index] = prd.normal;
 		optixLaunchParams.results.masks[index] = prd.mask;
 	}
 
@@ -100,6 +103,7 @@ using namespace osc;
 		IUMPayload& prd = *(IUMPayload*)getPRD<IUMPayload>();
 		// Questo pixel UV non corrisponde a nessun triangolo
 		prd.position = vec3f(0.f);
+		prd.normal = vec3f(0.f);
 		prd.mask = 0;
 	}
 
@@ -130,8 +134,15 @@ using namespace osc;
 		// che abbiamo ottenuto dal hit in UV space
 		const vec3f worldPosition = w * worldPos0 + u * worldPos1 + v * worldPos2;
 
+		// Normale di faccia: cross product dei lati del triangolo in world space.
+		// Outward se il winding OBJ Ã¨ CCW (standard tinyobj).
+		const vec3f e1 = worldPos1 - worldPos0;
+		const vec3f e2 = worldPos2 - worldPos0;
+		const vec3f faceNormal = normalize(cross(e1, e2));
+
 		// Salva il risultato
 		prd.position = worldPosition;
+		prd.normal = faceNormal;
 		prd.mask = 1;  // Hit valido!
 	}
 

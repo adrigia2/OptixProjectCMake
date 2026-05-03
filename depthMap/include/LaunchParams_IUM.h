@@ -26,6 +26,7 @@ namespace osc {
 		struct {
 			// Output buffers
 			vec3f* positions;
+			vec3f* normals;
 			uint8_t* masks;
 		} results;
 

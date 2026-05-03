@@ -20,12 +20,17 @@ cuda_compile_and_embed(embedded_ptx_code_colortex
   ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsColorTex.cu
 )
 
+cuda_compile_and_embed(embedded_ptx_code_irradiance
+  ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsIrradiance.cu
+)
+
 # ----- Executable -----
 add_executable(depthMap
   ${embedded_ptx_code}
   ${embedded_ptx_code_ium}
   ${embedded_ptx_code_vis}
   ${embedded_ptx_code_colortex}
+  ${embedded_ptx_code_irradiance}
 
   # src/
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -37,6 +42,7 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Visibility_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Depth_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorTex_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Irradiance_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixActor.cpp
 
   # headers (opzionale elencarli, ma utile in Visual Studio)
@@ -56,6 +62,8 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Visibility_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Depth_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/ColorTex_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Irradiance_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_Irradiance.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Frame.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
 )
@@ -83,6 +91,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${embedded_ptx_code_ium}
   ${embedded_ptx_code_vis}
   ${embedded_ptx_code_colortex}
+  ${embedded_ptx_code_irradiance}
 
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11_wrapper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp
@@ -90,6 +99,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Visibility_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Depth_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorTex_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Irradiance_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/LogManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/IOManager.cpp
@@ -101,6 +111,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Visibility_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Depth_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/ColorTex_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Irradiance_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Frame.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TriangleMesh.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LogManager.h
@@ -110,6 +121,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_IUM.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_DPN.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_ColorTex.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_Irradiance.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/optix7.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/ImageResultType.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TransformReader.h
