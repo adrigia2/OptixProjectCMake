@@ -28,13 +28,15 @@ void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 // Equirectangular envmap lookup (assume world Y-up — convenzione tipica HDR Blender)
 // ----------------------------------------------------------------------------
 static __forceinline__ __device__
-vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz)
+vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_u)
 {
     const float dx = d.x;
     const float dy = fmaxf(-1.0f, fminf(1.0f, d.y));
     const float dz = d.z;
 
-    const float u = 0.5f + atan2f(dx, -dz) * (1.0f / (2.0f * M_PIf));
+    float u = 0.5f + atan2f(dx, -dz) * (1.0f / (2.0f * M_PIf));
+    u += yaw_offset_u;
+    u -= floorf(u);                       // wrap a [0, 1)
     const float v = 0.5f - asinf(dy) * (1.0f / M_PIf);
 
     int px = (int)(u * (float)sz.x);
@@ -112,7 +114,8 @@ extern "C" __global__ void __raygen__renderIrradiance()
             if (occluded == 0u) {
                 const vec3f L = sampleEnvmap(worldDir,
                                              optixLaunchParams.skybox.envmap,
-                                             optixLaunchParams.skybox.skybox_size);
+                                             optixLaunchParams.skybox.skybox_size,
+                                             optixLaunchParams.skybox.yaw_offset_u);
                 // cosTerm = dot(worldDir, n) = local.z = z (per costruzione)
                 accum = accum + L * z;
             }

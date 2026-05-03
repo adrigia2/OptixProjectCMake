@@ -152,7 +152,8 @@ void Irradiance_Generator::cleanup() {
 void Irradiance_Generator::setInputs(const IUM_Generator::Result& ium_result,
                                      const std::vector<vec3f>& skybox,
                                      vec2i skyboxSize,
-                                     int sampleSide)
+                                     int sampleSide,
+                                     float skyboxYawDegrees)
 {
     numPixels = (int)ium_result.positions.size();
 
@@ -213,11 +214,17 @@ void Irradiance_Generator::setInputs(const IUM_Generator::Result& ium_result,
     launchParams.skybox.envmap           = (vec3f*)skyboxBuffer.d_pointer();
     launchParams.skybox.skybox_size      = skyboxSize;
 
+    constexpr float PI_F = 3.14159265358979323846f;
+    const float yaw_rad = skyboxYawDegrees * (PI_F / 180.0f);
+    float yaw_offset_u = yaw_rad / (2.0f * PI_F);
+    yaw_offset_u -= floorf(yaw_offset_u);  // normalizza in [0, 1)
+    launchParams.skybox.yaw_offset_u     = yaw_offset_u;
+
     launchParams.sample_side             = sampleSide;
     launchParams.epsilon                 = 1e-4f;
 
-    LogManager::Log("Irradiance inputs ready: %d pixels, skybox %dx%d, %dx%d samples",
-                    numPixels, skyboxSize.x, skyboxSize.y, sampleSide, sampleSide);
+    LogManager::Log("Irradiance inputs ready: %d pixels, skybox %dx%d, %dx%d samples, yaw=%.1f deg",
+                    numPixels, skyboxSize.x, skyboxSize.y, sampleSide, sampleSide, skyboxYawDegrees);
 }
 
 void Irradiance_Generator::render() {

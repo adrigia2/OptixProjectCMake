@@ -360,7 +360,8 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				const IUM_Generator::Result& ium_res,
 				py::array_t<float, py::array::c_style | py::array::forcecast> skybox,
 				gdt::vec2i skybox_size,
-				int sample_side) {
+				int sample_side,
+				float skybox_yaw_degrees) {
 			py::buffer_info b = skybox.request();
 			if (b.ndim != 2 || b.shape[1] != 3)
 				throw py::value_error("skybox must be a (H*W, 3) float32 array");
@@ -370,8 +371,9 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 			for (py::ssize_t i = 0; i < b.shape[0]; ++i)
 				sky[i] = gdt::vec3f(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
 
-			self.setInputs(ium_res, sky, skybox_size, sample_side);
-		}, py::arg("ium_result"), py::arg("skybox"), py::arg("skybox_size"), py::arg("sample_side"))
+			self.setInputs(ium_res, sky, skybox_size, sample_side, skybox_yaw_degrees);
+		}, py::arg("ium_result"), py::arg("skybox"), py::arg("skybox_size"),
+		   py::arg("sample_side"), py::arg("skybox_yaw_degrees") = 180.0f)
 		.def("render", &osc::Irradiance_Generator::render)
 		.def("get_result", [](osc::Irradiance_Generator& self) -> osc::Irradiance_Generator::Result {
 			return self.getResult();

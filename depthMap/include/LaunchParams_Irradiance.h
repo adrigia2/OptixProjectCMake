@@ -25,6 +25,7 @@ namespace osc {
         struct {
             vec3f* envmap;       // [skybox_size.x * skybox_size.y] RGB float
             vec2i  skybox_size;
+            float  yaw_offset_u; // = yaw_radians / (2π) — shift su asse U per rotazione yaw
         } skybox;
 
         int   sample_side;       // N → N×N campioni Monte Carlo per texel

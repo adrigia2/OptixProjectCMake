@@ -37,10 +37,12 @@ public:
 
     // Carica gli input. skyboxSize = (width, height) in pixel della envmap equirettangolare.
     // sampleSide = N → vengono usati N*N campioni per texel.
+    // skyboxYawDegrees = rotazione attorno all'asse verticale Y world (180 fixa convenzione Blender).
     void setInputs(const IUM_Generator::Result& ium_result,
                    const std::vector<vec3f>& skybox,
                    vec2i skyboxSize,
-                   int sampleSide);
+                   int sampleSide,
+                   float skyboxYawDegrees = 180.0f);
 
     void render();
 
