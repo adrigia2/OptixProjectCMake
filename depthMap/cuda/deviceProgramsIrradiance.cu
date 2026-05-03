@@ -25,19 +25,21 @@ void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 }
 
 // ----------------------------------------------------------------------------
-// Equirectangular envmap lookup (assume world Y-up — convenzione tipica HDR Blender)
+// Equirectangular envmap lookup — world space is Z-up, Y-forward (Blender native).
+// Azimuth: atan2(dx, -dy) → -Y direction at u=0.5 (Blender default camera forward).
+// Elevation: asinf(dz)    → +Z is zenith (v=0), -Z is nadir (v=1).
 // ----------------------------------------------------------------------------
 static __forceinline__ __device__
 vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_u)
 {
     const float dx = d.x;
-    const float dy = fmaxf(-1.0f, fminf(1.0f, d.y));
-    const float dz = d.z;
+    const float dy = d.y;
+    const float dz = fmaxf(-1.0f, fminf(1.0f, d.z));   // elevation axis (Z-up)
 
-    float u = 0.5f + atan2f(dx, -dz) * (1.0f / (2.0f * M_PIf));
+    float u = 0.5f + atan2f(dx, -dy) * (1.0f / (2.0f * M_PIf));  // azimuth in XY plane
     u += yaw_offset_u;
     u -= floorf(u);                       // wrap a [0, 1)
-    const float v = 0.5f - asinf(dy) * (1.0f / M_PIf);
+    const float v = 0.5f - asinf(dz) * (1.0f / M_PIf);  // Z is up
 
     int px = (int)(u * (float)sz.x);
     int py = (int)(v * (float)sz.y);

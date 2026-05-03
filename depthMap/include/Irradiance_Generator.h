@@ -37,12 +37,14 @@ public:
 
     // Carica gli input. skyboxSize = (width, height) in pixel della envmap equirettangolare.
     // sampleSide = N → vengono usati N*N campioni per texel.
-    // skyboxYawDegrees = rotazione attorno all'asse verticale Y world (180 fixa convenzione Blender).
+    // skyboxYawDegrees = rotazione attorno all'asse verticale Z (up in Blender space).
+    //   Default 0°: -Y (Blender camera forward) al centro dell'envmap.
+    //   Regolarlo se la HDRI ha un'orientazione diversa.
     void setInputs(const IUM_Generator::Result& ium_result,
                    const std::vector<vec3f>& skybox,
                    vec2i skyboxSize,
                    int sampleSide,
-                   float skyboxYawDegrees = 180.0f);
+                   float skyboxYawDegrees = 0.0f);
 
     void render();
 

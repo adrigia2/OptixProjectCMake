@@ -373,7 +373,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 
 			self.setInputs(ium_res, sky, skybox_size, sample_side, skybox_yaw_degrees);
 		}, py::arg("ium_result"), py::arg("skybox"), py::arg("skybox_size"),
-		   py::arg("sample_side"), py::arg("skybox_yaw_degrees") = 180.0f)
+		   py::arg("sample_side"), py::arg("skybox_yaw_degrees") = 0.0f)
 		.def("render", &osc::Irradiance_Generator::render)
 		.def("get_result", [](osc::Irradiance_Generator& self) -> osc::Irradiance_Generator::Result {
 			return self.getResult();
