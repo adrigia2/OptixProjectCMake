@@ -10,6 +10,7 @@
 #include "Visibility_Generator.h"
 #include "ColorTex_Generator.h"
 #include "Irradiance_Generator.h"
+#include "Indirect_Generator.h"
 #include "Frame.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
@@ -378,6 +379,56 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("get_result", [](osc::Irradiance_Generator& self) -> osc::Irradiance_Generator::Result {
 			return self.getResult();
 		}, py::return_value_policy::move);
+
+	// --- IndirectTileResult / IndirectGenerator ---
+
+	py::class_<osc::Indirect_Generator::TileResult>(m, "IndirectTileResult")
+		.def_readonly("count", &osc::Indirect_Generator::TileResult::count)
+		.def_property_readonly("directions_np", [](osc::Indirect_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.dirs.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(gdt::vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.dirs.data()),
+				base
+			);
+		})
+		.def_property_readonly("cos_np", [](osc::Indirect_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.cos_weights.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>({ n }, { sizeof(float) },
+				r.cos_weights.data(), base);
+		})
+		.def_property_readonly("t_hit_np", [](osc::Indirect_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.t_hits.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>({ n }, { sizeof(float) },
+				r.t_hits.data(), base);
+		})
+		.def_property_readonly("local_idx_np", [](osc::Indirect_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.local_indices.size());
+			py::object base = py::cast(&r);
+			return py::array_t<int>({ n }, { sizeof(int) },
+				r.local_indices.data(), base);
+		});
+
+	py::class_<osc::Indirect_Generator>(m, "IndirectGenerator")
+		.def(py::init<>())
+		.def("set_traversable", &osc::Indirect_Generator::setTraversable, py::arg("model"))
+		.def("set_inputs", [](osc::Indirect_Generator& self,
+				const osc::IUM_Generator::Result& ium_res,
+				int sample_side,
+				int tile_size) {
+			self.setInputs(ium_res, sample_side, tile_size);
+		}, py::arg("ium_result"), py::arg("sample_side"), py::arg("tile_size") = 1024)
+		.def("num_tiles", &osc::Indirect_Generator::numTiles)
+		.def("tile_size", &osc::Indirect_Generator::tileSize)
+		.def("num_pixels", &osc::Indirect_Generator::numPixels)
+		.def("render_tile", [](osc::Indirect_Generator& self, int tile_idx)
+				-> osc::Indirect_Generator::TileResult {
+			return self.renderTile(tile_idx);
+		}, py::arg("tile_idx"), py::return_value_policy::move);
 
 	py::class_<OptixManager>(m, "OptixManager")
 		.def_static("instance", &OptixManager::instance,
