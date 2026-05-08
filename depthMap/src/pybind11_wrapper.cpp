@@ -417,7 +417,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def(py::init<>())
 		.def("set_traversable", &osc::Indirect_Generator::setTraversable, py::arg("model"))
 		.def("set_inputs", [](osc::Indirect_Generator& self,
-				const osc::IUM_Generator::Result& ium_res,
+				const IUM_Generator::Result& ium_res,
 				int sample_side,
 				int tile_size) {
 			self.setInputs(ium_res, sample_side, tile_size);
