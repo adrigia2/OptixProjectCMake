@@ -28,6 +28,10 @@ cuda_compile_and_embed(embedded_ptx_code_indirect
   ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsIndirect.cu
 )
 
+cuda_compile_and_embed(embedded_ptx_code_speccone
+  ${CMAKE_CURRENT_SOURCE_DIR}/cuda/deviceProgramsSpecCone.cu
+)
+
 # ----- Executable -----
 add_executable(depthMap
   ${embedded_ptx_code}
@@ -36,6 +40,7 @@ add_executable(depthMap
   ${embedded_ptx_code_colortex}
   ${embedded_ptx_code_irradiance}
   ${embedded_ptx_code_indirect}
+  ${embedded_ptx_code_speccone}
 
   # src/
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -49,6 +54,7 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorTex_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Irradiance_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Indirect_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/SpecCone_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixActor.cpp
 
   # headers (opzionale elencarli, ma utile in Visual Studio)
@@ -72,6 +78,8 @@ add_executable(depthMap
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_Irradiance.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Indirect_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_Indirect.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/SpecCone_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_SpecCone.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Frame.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/OptixActor.h
 )
@@ -101,6 +109,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${embedded_ptx_code_colortex}
   ${embedded_ptx_code_irradiance}
   ${embedded_ptx_code_indirect}
+  ${embedded_ptx_code_speccone}
 
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11_wrapper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/OptixManager.cpp
@@ -110,6 +119,7 @@ pybind11_add_module(OptixProgrammablePasses
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ColorTex_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Irradiance_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Indirect_Generator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/SpecCone_Generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/TriangleMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/LogManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/IOManager.cpp
@@ -124,6 +134,8 @@ pybind11_add_module(OptixProgrammablePasses
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Irradiance_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Indirect_Generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_Indirect.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/SpecCone_Generator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/LaunchParams_SpecCone.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Frame.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/TriangleMesh.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/LogManager.h

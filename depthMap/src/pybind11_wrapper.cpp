@@ -11,6 +11,7 @@
 #include "ColorTex_Generator.h"
 #include "Irradiance_Generator.h"
 #include "Indirect_Generator.h"
+#include "SpecCone_Generator.h"
 #include "Frame.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
@@ -427,6 +428,107 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("num_pixels", &osc::Indirect_Generator::numPixels)
 		.def("render_tile", [](osc::Indirect_Generator& self, int tile_idx)
 				-> osc::Indirect_Generator::TileResult {
+			return self.renderTile(tile_idx);
+		}, py::arg("tile_idx"), py::return_value_policy::move);
+
+	// --- SpecConeTileResult / SpecConeGenerator ---
+
+	py::class_<osc::SpecCone_Generator::TileResult>(m, "SpecConeTileResult")
+		.def_readonly("count", &osc::SpecCone_Generator::TileResult::count)
+		.def_readonly("tile_texels", &osc::SpecCone_Generator::TileResult::tile_texels)
+		.def_readonly("num_levels", &osc::SpecCone_Generator::TileResult::num_levels)
+		.def_property_readonly("directions_np", [](osc::SpecCone_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.dirs.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ n, py::ssize_t(3) },
+				{ py::ssize_t(sizeof(gdt::vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.dirs.data()),
+				base
+			);
+		})
+		.def_property_readonly("t_hit_np", [](osc::SpecCone_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.t_hits.size());
+			py::object base = py::cast(&r);
+			return py::array_t<float>({ n }, { sizeof(float) },
+				r.t_hits.data(), base);
+		})
+		.def_property_readonly("local_idx_np", [](osc::SpecCone_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.local_indices.size());
+			py::object base = py::cast(&r);
+			return py::array_t<int>({ n }, { sizeof(int) },
+				r.local_indices.data(), base);
+		})
+		.def_property_readonly("ring_idx_np", [](osc::SpecCone_Generator::TileResult& r) {
+			py::ssize_t n = static_cast<py::ssize_t>(r.ring_indices.size());
+			py::object base = py::cast(&r);
+			return py::array_t<int>({ n }, { sizeof(int) },
+				r.ring_indices.data(), base);
+		})
+		.def_property_readonly("sky_sum_np", [](osc::SpecCone_Generator::TileResult& r) {
+			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
+			py::ssize_t l = static_cast<py::ssize_t>(r.num_levels);
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ t, l, py::ssize_t(3) },
+				{ py::ssize_t(l * sizeof(gdt::vec3f)), py::ssize_t(sizeof(gdt::vec3f)), py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.sky_sum.data()),
+				base
+			);
+		})
+		.def_property_readonly("valid_count_np", [](osc::SpecCone_Generator::TileResult& r) {
+			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
+			py::ssize_t l = static_cast<py::ssize_t>(r.num_levels);
+			py::object base = py::cast(&r);
+			return py::array_t<int>(
+				{ t, l },
+				{ py::ssize_t(l * sizeof(int)), py::ssize_t(sizeof(int)) },
+				r.valid_count.data(),
+				base
+			);
+		});
+
+	py::class_<osc::SpecCone_Generator>(m, "SpecConeGenerator")
+		.def(py::init<>())
+		.def("set_traversable", &osc::SpecCone_Generator::setTraversable, py::arg("model"))
+		.def("set_inputs", [](osc::SpecCone_Generator& self,
+				const IUM_Generator::Result& ium_res,
+				const std::vector<float>& cone_apertures_deg,
+				int samples_per_ring,
+				int tile_size) {
+			self.setInputs(ium_res, cone_apertures_deg, samples_per_ring, tile_size);
+		}, py::arg("ium_result"), py::arg("cone_apertures_deg"),
+		   py::arg("samples_per_ring"), py::arg("tile_size") = 1024)
+		.def("set_envmap", [](osc::SpecCone_Generator& self,
+				py::array_t<float, py::array::c_style | py::array::forcecast> skybox,
+				gdt::vec2i skybox_size,
+				float skybox_yaw_degrees) {
+			py::buffer_info b = skybox.request();
+			if (b.ndim != 2 || b.shape[1] != 3)
+				throw py::value_error("skybox must be a (H*W, 3) float32 array");
+
+			std::vector<gdt::vec3f> sky(b.shape[0]);
+			const float* p = static_cast<const float*>(b.ptr);
+			for (py::ssize_t i = 0; i < b.shape[0]; ++i)
+				sky[i] = gdt::vec3f(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+
+			self.setEnvmap(sky, skybox_size, skybox_yaw_degrees);
+		}, py::arg("skybox"), py::arg("skybox_size"), py::arg("skybox_yaw_degrees") = 0.0f)
+		.def("set_camera", [](osc::SpecCone_Generator& self,
+				const gdt::vec3f& cam_pos,
+				py::array_t<uint8_t, py::array::c_style | py::array::forcecast> visibility) {
+			py::buffer_info vbuf = visibility.request();
+			std::vector<uint8_t> vis_vec(
+				static_cast<uint8_t*>(vbuf.ptr),
+				static_cast<uint8_t*>(vbuf.ptr) + vbuf.size);
+			self.setCamera(cam_pos, vis_vec);
+		}, py::arg("cam_pos"), py::arg("visibility"))
+		.def("num_tiles", &osc::SpecCone_Generator::numTiles)
+		.def("tile_size", &osc::SpecCone_Generator::tileSize)
+		.def("num_pixels", &osc::SpecCone_Generator::numPixels)
+		.def("num_levels", &osc::SpecCone_Generator::numLevels)
+		.def("render_tile", [](osc::SpecCone_Generator& self, int tile_idx)
+				-> osc::SpecCone_Generator::TileResult {
 			return self.renderTile(tile_idx);
 		}, py::arg("tile_idx"), py::return_value_policy::move);
 

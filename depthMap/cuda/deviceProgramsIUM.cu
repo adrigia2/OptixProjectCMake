@@ -54,10 +54,13 @@ using namespace osc;
 
 		const auto size = optixLaunchParams.size;
 
-		// Converti coordinate pixel in coordinate UV normalizzate [0,1]
+		// Converti coordinate pixel in coordinate UV normalizzate [0,1].
+		// L'asse V è invertito rispetto all'indice riga (iy=0 = riga in alto
+		// dell'immagine = V=1) in modo che l'origine UV (0,0) sia in basso a
+		// sinistra — convenzione Blender/OBJ/OpenGL.
 		const vec2f pixelUV(
 			(float(ix) + 0.5f) / float(size.x),
-			(float(iy) + 0.5f) / float(size.y)
+			1.0f - (float(iy) + 0.5f) / float(size.y)
 		);
 
 		// Inizializza il payload
