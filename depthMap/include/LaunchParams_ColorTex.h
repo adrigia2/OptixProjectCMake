@@ -23,8 +23,13 @@ namespace osc {
     struct LaunchParams_ColorTex {
         // IUM input
         vec3f*   ium_positions;
+        vec3f*   ium_normals;        // face normals per texel (size = num_pixels)
         uint8_t* ium_masks;
         int      num_pixels;
+
+        // Grazing-angle cull: discard camera contributions where n·v < grazing_min_cos.
+        // Set to -1.f (or any value <= -1) to disable the filter entirely.
+        float    grazing_min_cos;
 
         // Visibility: shape [num_pixels * num_cameras]
         uint8_t* visibility;

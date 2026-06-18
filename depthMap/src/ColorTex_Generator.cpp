@@ -49,7 +49,8 @@ void ColorTex_Generator::createHitgroupPrograms() {
 void ColorTex_Generator::setInputs(
     const IUM_Generator::Result& ium,
     const std::vector<uint8_t>&  visibility,
-    const std::vector<Frame>&    frames)
+    const std::vector<Frame>&    frames,
+    float                        grazingMaxDeg)
 {
     int num_pixels  = (int)ium.positions.size();
     int num_cameras = (int)frames.size();
@@ -61,6 +62,22 @@ void ColorTex_Generator::setInputs(
         throw std::runtime_error("ColorTex_Generator::setInputs: visibility size mismatch");
 
     iumPositionsBuffer.alloc_and_upload(ium.positions);
+
+    // Normals: upload if available, otherwise disable the grazing filter
+    if (ium.hasNormals()) {
+        iumNormalsBuffer.alloc_and_upload(ium.normals);
+        launchParams.ium_normals = (vec3f*)iumNormalsBuffer.d_pointer();
+    } else {
+        launchParams.ium_normals   = nullptr;
+        grazingMaxDeg              = 90.f;  // force-disable: no normals available
+    }
+
+    // Convert threshold to cosine once on CPU; sentinel -1 disables the check in the kernel
+    constexpr float kPi = 3.14159265358979323846f;
+    launchParams.grazing_min_cos = (grazingMaxDeg >= 90.f)
+        ? -1.f
+        : std::cos(grazingMaxDeg * kPi / 180.f);
+
     iumMasksBuffer.alloc_and_upload(ium.masks);
     visibilityBuffer.alloc_and_upload(visibility);
 
@@ -109,6 +126,7 @@ void ColorTex_Generator::setInputs(
                num_pixels * num_cameras * sizeof(vec3f));
 
     launchParams.ium_positions        = (vec3f*)iumPositionsBuffer.d_pointer();
+    // ium_normals and grazing_min_cos already set above
     launchParams.ium_masks            = (uint8_t*)iumMasksBuffer.d_pointer();
     launchParams.num_pixels           = num_pixels;
     launchParams.visibility           = (uint8_t*)visibilityBuffer.d_pointer();
@@ -160,6 +178,7 @@ void ColorTex_Generator::render() {
 void ColorTex_Generator::cleanup() {
     OptixActor::cleanup();
     iumPositionsBuffer.free();
+    iumNormalsBuffer.free();
     iumMasksBuffer.free();
     visibilityBuffer.free();
     camerasBuffer.free();

@@ -31,7 +31,7 @@ vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_
     const float dy = d.y;
     const float dz = fmaxf(-1.0f, fminf(1.0f, d.z));
 
-    float u = 0.5f + atan2f(dx, -dy) * (1.0f / (2.0f * M_PIf));
+    float u = 0.5f - atan2f(dy, dx) * (1.0f / (2.0f * M_PIf));  // azimuth: Blender equirectangular convention
     u += yaw_offset_u;
     u -= floorf(u);
     const float v = 0.5f - asinf(dz) * (1.0f / M_PIf);

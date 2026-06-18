@@ -48,6 +48,19 @@ extern "C" __global__ void __raygen__colorTex()
 
             // Perspective projection
             const vec3f d = pos - cam.position;
+
+            // Grazing-angle cull: se la camera vede il texel troppo di taglio
+            // (n·v < soglia) viene trattata come se non vedesse il punto.
+            // La direzione texel->camera è -d, quindi n·v = -dot(n,d)/|d|.
+            // Per evitare la divisione confrontiamo: -dot(n,d) < grazing_min_cos * |d|
+            if (optixLaunchParams.grazing_min_cos > -1.f) {
+                const vec3f n = optixLaunchParams.ium_normals[idx];
+                if (-dot(n, d) < optixLaunchParams.grazing_min_cos * length(d)) {
+                    optixLaunchParams.camera_color_output[idx * num_cameras + k] = vec3f(0.f, 0.f, 0.f);
+                    continue;
+                }
+            }
+
             const float t = dot(d, cam.forward);
 
             if (t > 0.f) {

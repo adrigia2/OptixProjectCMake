@@ -321,7 +321,8 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("set_inputs", [](osc::ColorTex_Generator& self,
 				const IUM_Generator::Result& ium_res,
 				py::array_t<uint8_t, py::array::c_style | py::array::forcecast> visibility,
-				py::list frames_list) {
+				py::list frames_list,
+				float grazing_max_deg) {
 			py::buffer_info vbuf = visibility.request();
 			std::vector<uint8_t> vis_vec(
 				static_cast<uint8_t*>(vbuf.ptr),
@@ -332,8 +333,9 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 			for (auto item : frames_list)
 				frames.push_back(item.cast<osc::Frame>());
 
-			self.setInputs(ium_res, vis_vec, frames);
-		}, py::arg("ium_result"), py::arg("visibility"), py::arg("frames"))
+			self.setInputs(ium_res, vis_vec, frames, grazing_max_deg);
+		}, py::arg("ium_result"), py::arg("visibility"), py::arg("frames"),
+		   py::arg("grazing_max_deg") = 90.f)
 		.def("render", &osc::ColorTex_Generator::render)
 		.def("get_result", [](osc::ColorTex_Generator& self) -> osc::ColorTex_Generator::Result {
 			return self.getResult();

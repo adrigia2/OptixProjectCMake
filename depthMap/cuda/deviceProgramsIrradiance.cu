@@ -26,7 +26,7 @@ void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 
 // ----------------------------------------------------------------------------
 // Equirectangular envmap lookup — world space is Z-up, Y-forward (Blender native).
-// Azimuth: atan2(dx, -dy) → -Y direction at u=0.5 (Blender default camera forward).
+// Azimuth: -atan2(dy, dx) → +X direction at u=0.5 matches Blender equirectangular convention.
 // Elevation: asinf(dz)    → +Z is zenith (v=0), -Z is nadir (v=1).
 // ----------------------------------------------------------------------------
 static __forceinline__ __device__
@@ -36,7 +36,7 @@ vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_
     const float dy = d.y;
     const float dz = fmaxf(-1.0f, fminf(1.0f, d.z));   // elevation axis (Z-up)
 
-    float u = 0.5f + atan2f(dx, -dy) * (1.0f / (2.0f * M_PIf));  // azimuth in XY plane
+    float u = 0.5f - atan2f(dy, dx) * (1.0f / (2.0f * M_PIf));  // azimuth: Blender equirectangular convention
     u += yaw_offset_u;
     u -= floorf(u);                       // wrap a [0, 1)
     const float v = 0.5f - asinf(dz) * (1.0f / M_PIf);  // Z is up

@@ -38,9 +38,12 @@ public:
 
     void cleanup() override;
 
+    // grazingMaxDeg: angle (degrees) from the surface normal beyond which a camera
+    // contribution is discarded. 90.f (default) disables the filter entirely.
     void setInputs(const IUM_Generator::Result& ium,
                    const std::vector<uint8_t>& visibility,
-                   const std::vector<Frame>& frames);
+                   const std::vector<Frame>& frames,
+                   float grazingMaxDeg = 90.f);
 
     void render();
 
@@ -49,6 +52,7 @@ public:
 private:
     LaunchParams_ColorTex   launchParams = {};
     CUDABuffer              iumPositionsBuffer;
+    CUDABuffer              iumNormalsBuffer;
     CUDABuffer              iumMasksBuffer;
     CUDABuffer              visibilityBuffer;
     CUDABuffer              camerasBuffer;
