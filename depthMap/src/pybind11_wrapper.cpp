@@ -265,21 +265,6 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				base
 			);
 		})
-		.def_property_readonly("camera_colors_np", [](osc::ColorTex_Generator::Result& r) {
-			using gdt::vec3f;
-			py::ssize_t n  = static_cast<py::ssize_t>(r.num_cameras > 0
-			                   ? r.camera_colors.size() / r.num_cameras : 0);
-			py::ssize_t nc = static_cast<py::ssize_t>(r.num_cameras);
-			py::object base = py::cast(&r);
-			return py::array_t<float>(
-				{ n, nc, py::ssize_t(3) },
-				{ py::ssize_t(sizeof(vec3f)) * nc,
-				  py::ssize_t(sizeof(vec3f)),
-				  py::ssize_t(sizeof(float)) },
-				reinterpret_cast<float*>(r.camera_colors.data()),
-				base
-			);
-		})
 		.def_property_readonly("color_min_np", [](osc::ColorTex_Generator::Result& r) {
 			using gdt::vec3f;
 			py::ssize_t n = static_cast<py::ssize_t>(r.color_min.size());
@@ -337,6 +322,16 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		}, py::arg("ium_result"), py::arg("visibility"), py::arg("frames"),
 		   py::arg("grazing_max_deg") = 90.f)
 		.def("render", &osc::ColorTex_Generator::render)
+		// Slice per-camera scaricata on-demand dalla GPU (il mirror host completo
+		// num_pixels × num_cameras non scala); il download scrive direttamente
+		// nel buffer dell'array numpy restituito, senza copie intermedie.
+		.def("download_camera_colors", [](osc::ColorTex_Generator& self, int cam) {
+			py::ssize_t n = static_cast<py::ssize_t>(self.numPixels());
+			py::array_t<float> out({ n, py::ssize_t(3) });
+			self.downloadCameraColors(
+				cam, reinterpret_cast<gdt::vec3f*>(out.mutable_data()));
+			return out;
+		}, py::arg("cam"))
 		.def("get_result", [](osc::ColorTex_Generator& self) -> osc::ColorTex_Generator::Result {
 			return self.getResult();
 		}, py::return_value_policy::move);

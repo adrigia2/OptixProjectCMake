@@ -12,7 +12,6 @@ class ColorTex_Generator : public OptixActor {
 public:
     struct Result {
         std::vector<vec3f> colors;          // size = num_pixels
-        std::vector<vec3f> camera_colors;   // size = num_pixels * num_cameras
         std::vector<vec3f> color_min;       // size = num_pixels
         std::vector<vec3f> color_max;       // size = num_pixels
         std::vector<vec3f> color_variance;  // size = num_pixels, per-channel variance across cameras
@@ -46,6 +45,14 @@ public:
                    float grazingMaxDeg = 90.f);
 
     void render();
+
+    // Per-camera colors are not mirrored on the host (num_pixels × num_cameras
+    // would not scale); the GPU buffer is camera-major, so each camera slice is
+    // contiguous and downloaded on demand. Valid after render(), until cleanup().
+    void downloadCameraColors(int cam, vec3f* dst) const;
+
+    int numPixels()  const { return launchParams.num_pixels; }
+    int numCameras() const { return launchParams.num_cameras; }
 
     const Result& getResult() const { return result; }
 

@@ -26,7 +26,7 @@ extern "C" __global__ void __raygen__colorTex()
         optixLaunchParams.color_variance_output[idx] = vec3f(0.f, 0.f, 0.f);
         const int num_cameras_early = optixLaunchParams.num_cameras;
         for (int k = 0; k < num_cameras_early; ++k)
-            optixLaunchParams.camera_color_output[idx * num_cameras_early + k] = vec3f(0.f, 0.f, 0.f);
+            optixLaunchParams.camera_color_output[size_t(k) * optixLaunchParams.num_pixels + idx] = vec3f(0.f, 0.f, 0.f);
         return;
     }
 
@@ -56,7 +56,7 @@ extern "C" __global__ void __raygen__colorTex()
             if (optixLaunchParams.grazing_min_cos > -1.f) {
                 const vec3f n = optixLaunchParams.ium_normals[idx];
                 if (-dot(n, d) < optixLaunchParams.grazing_min_cos * length(d)) {
-                    optixLaunchParams.camera_color_output[idx * num_cameras + k] = vec3f(0.f, 0.f, 0.f);
+                    optixLaunchParams.camera_color_output[size_t(k) * optixLaunchParams.num_pixels + idx] = vec3f(0.f, 0.f, 0.f);
                     continue;
                 }
             }
@@ -98,7 +98,7 @@ extern "C" __global__ void __raygen__colorTex()
             }
         }
 
-        optixLaunchParams.camera_color_output[idx * num_cameras + k] = cam_color;
+        optixLaunchParams.camera_color_output[size_t(k) * optixLaunchParams.num_pixels + idx] = cam_color;
     }
 
     if (count > 0) {

@@ -43,7 +43,8 @@ namespace osc {
         vec3f* color_min_output;      // per-texel minimum color across cameras
         vec3f* color_max_output;      // per-texel maximum color across cameras
         vec3f* color_variance_output; // per-texel variance (E[X²]-E[X]²) across cameras
-        // Output: per-camera, shape [num_pixels * num_cameras]
+        // Output: per-camera, camera-major [cam * num_pixels + pixel]
+        // (ogni slice di camera è contigua → download per-camera senza stride)
         vec3f* camera_color_output;
     };
 

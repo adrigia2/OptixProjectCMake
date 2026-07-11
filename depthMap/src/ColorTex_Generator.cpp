@@ -121,9 +121,10 @@ void ColorTex_Generator::setInputs(
     colorVarianceOutputBuffer.alloc(num_pixels * sizeof(vec3f));
     cudaMemset((void*)colorVarianceOutputBuffer.d_pointer(), 0, num_pixels * sizeof(vec3f));
 
-    cameraColorOutputBuffer.alloc(num_pixels * num_cameras * sizeof(vec3f));
-    cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0,
-               num_pixels * num_cameras * sizeof(vec3f));
+    // size_t fin dal primo prodotto: int*int overflowa già a 128 camere con texture 4096²
+    const size_t camColorBytes = size_t(num_pixels) * num_cameras * sizeof(vec3f);
+    cameraColorOutputBuffer.alloc(camColorBytes);
+    cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0, camColorBytes);
 
     launchParams.ium_positions        = (vec3f*)iumPositionsBuffer.d_pointer();
     // ium_normals and grazing_min_cos already set above
@@ -169,10 +170,21 @@ void ColorTex_Generator::render() {
     result.color_variance.resize(launchParams.num_pixels);
     colorVarianceOutputBuffer.download(result.color_variance.data(), launchParams.num_pixels);
 
-    int total = launchParams.num_pixels * launchParams.num_cameras;
-    result.camera_colors.resize(total);
-    cameraColorOutputBuffer.download(result.camera_colors.data(), total);
+    // I colori per-camera restano solo su GPU (num_pixels × num_cameras non scala
+    // su host: ~12 GB con texture 4096² e 60 camere); vanno letti una camera alla
+    // volta con downloadCameraColors().
     result.num_cameras = launchParams.num_cameras;
+}
+
+void ColorTex_Generator::downloadCameraColors(int cam, vec3f* dst) const {
+    if (launchParams.num_pixels == 0)
+        throw std::runtime_error("ColorTex_Generator::downloadCameraColors: call setInputs first");
+    if (cam < 0 || cam >= launchParams.num_cameras)
+        throw std::out_of_range("ColorTex_Generator::downloadCameraColors: camera index out of range");
+
+    const size_t sliceBytes = size_t(launchParams.num_pixels) * sizeof(vec3f);
+    const CUdeviceptr src = cameraColorOutputBuffer.d_pointer() + size_t(cam) * sliceBytes;
+    CUDA_CHECK(Memcpy((void*)dst, (void*)src, sliceBytes, cudaMemcpyDeviceToHost));
 }
 
 void ColorTex_Generator::cleanup() {
