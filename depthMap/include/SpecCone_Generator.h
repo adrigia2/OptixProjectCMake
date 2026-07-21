@@ -19,9 +19,14 @@ class SpecCone_Generator : public OptixActor
 public:
     struct TileResult
     {
-        int count;        // raggi hit nel buffer compatto
+        int count;        // raggi hit nel buffer compatto (clampato a tile_capacity)
         int tile_texels;  // texel effettivi di questo tile
         int num_levels;   // anelli + 1 (livello 0 = raggio specchio)
+
+        // Overflow del buffer compatto: i raggi oltre capacità sono scartati
+        // (senza bias, escono anche da valid_count) ma il tile è incompleto.
+        bool overflow;    // true se requested > capacità
+        int  requested;   // raggi hit richiesti prima del clamp
 
         // Buffer compatto dei raggi hit [count]
         std::vector<vec3f> dirs;
@@ -54,7 +59,15 @@ public:
 
     // Carica gli input IUM e la griglia di aperture (in gradi, apertura TOTALE
     // del cono, crescente, primo elemento = 0 → raggio specchio).
-    // samplesPerRing = campioni per anello; tileSize = texel per tile.
+    // samplesPerRing = un valore per anello, lunghezza coneAperturesDeg.size()-1
+    // (anelli 1..K-1; il livello 0 = raggio specchio è sempre 1 campione).
+    // tileSize = texel per tile.
+    void setInputs(const IUM_Generator::Result& ium_result,
+                   const std::vector<float>& coneAperturesDeg,
+                   const std::vector<int>& samplesPerRing,
+                   int tileSize = 1024);
+
+    // Overload di comodo: stesso numero di campioni su ogni anello.
     void setInputs(const IUM_Generator::Result& ium_result,
                    const std::vector<float>& coneAperturesDeg,
                    int samplesPerRing,
@@ -91,6 +104,7 @@ protected:
     CUDABuffer iumNormalsBuffer;
     CUDABuffer iumMasksBuffer;
     CUDABuffer ringCosBuffer;
+    CUDABuffer ringSamplesBuffer;
     CUDABuffer skyboxBuffer;
 
     // Input per camera
@@ -108,7 +122,7 @@ protected:
     int numPix       = 0;
     int tileSz       = 0;
     int numRings     = 0;
-    int samplesRing  = 0;
+    std::vector<int> ringSamples;   // [numRings + 1], [0] = 1 (specchio)
     int tileCapacity = 0;
     bool cameraSet   = false;
 

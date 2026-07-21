@@ -27,7 +27,10 @@ namespace osc {
         // [ring_cos[i], ring_cos[i-1]] in cosθ. Livello 0 = raggio specchio.
         float* ring_cos;         // [num_rings + 1]
         int    num_rings;
-        int    samples_per_ring;
+        // Campioni LANCIATI per anello (≠ valid_count, che conta solo quelli
+        // sopra l'orizzonte). ring_samples[0] = 1: il livello 0 è il raggio
+        // specchio, un anello degenere di larghezza nulla.
+        int*   ring_samples;     // [num_rings + 1]
 
         // Skybox HDR equirettangolare per i raggi miss
         // (stessa convenzione di LaunchParams_Irradiance.skybox)
@@ -49,7 +52,7 @@ namespace osc {
         int*   tile_rays_ring_idx;  // livello/anello di appartenenza [0, num_rings]
 
         unsigned int* tile_counter;
-        int           tile_capacity; // tile_size * (1 + num_rings * samples_per_ring)
+        int           tile_capacity; // tile_size * (1 + Σ_i ring_samples[i])
 
         // Accumuli per texel per livello (num_levels = num_rings + 1):
         // sky_sum     = somma envmap dei raggi miss

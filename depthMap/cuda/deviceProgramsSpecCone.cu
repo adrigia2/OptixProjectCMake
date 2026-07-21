@@ -74,12 +74,15 @@ void traceSample(const vec3f& origin, const vec3f& dir, int level,
         }
     } else {
         const unsigned int slot = atomicAdd(optixLaunchParams.tile_counter, 1u);
-        if (slot < (unsigned int)optixLaunchParams.tile_capacity) {
-            optixLaunchParams.tile_rays_dir[slot]       = dir;
-            optixLaunchParams.tile_rays_t_hit[slot]     = __uint_as_float(t_hit_bits);
-            optixLaunchParams.tile_rays_local_idx[slot] = local_idx;
-            optixLaunchParams.tile_rays_ring_idx[slot]  = level;
-        }
+        if (slot >= (unsigned int)optixLaunchParams.tile_capacity)
+            return;   // buffer pieno: il campione non contribuirà mai al numeratore,
+                      // quindi non deve nemmeno entrare nel denominatore (come i
+                      // raggi sotto l'orizzonte). L'overflow degrada la varianza,
+                      // non introduce bias. Il conteggio è segnalato dall'host.
+        optixLaunchParams.tile_rays_dir[slot]       = dir;
+        optixLaunchParams.tile_rays_t_hit[slot]     = __uint_as_float(t_hit_bits);
+        optixLaunchParams.tile_rays_local_idx[slot] = local_idx;
+        optixLaunchParams.tile_rays_ring_idx[slot]  = level;
     }
     validCount[level] += 1;
 }
@@ -88,8 +91,10 @@ void traceSample(const vec3f& origin, const vec3f& dir, int level,
 // Raygen — un thread per texel del tile. Per la camera corrente costruisce il
 // raggio riflesso R = reflect(v, n) e campiona anelli concentrici attorno a R
 // (cosθ uniforme per anello = uniforme in angolo solido). Livello 0 = raggio
-// specchio puro. I coni L(r_k) si ricostruiscono lato Python per somma
-// cumulativa pesata sugli angoli solidi degli anelli.
+// specchio puro. Ogni anello ha il proprio numero di campioni ring_samples[i],
+// così da poter dare agli anelli esterni una densità angolare confrontabile con
+// quella degli interni (l'ultimo copre ~45× l'angolo solido del primo).
+// I coni L(r_k) si ricostruiscono lato Python pesando gli anelli per Ω_i/N_i.
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __raygen__specCone()
 {
@@ -134,15 +139,16 @@ extern "C" __global__ void __raygen__specCone()
     // Livello 0: raggio specchio puro (anello degenere di apertura 0)
     traceSample(origin, R, 0, local_idx, skySum, validCount);
 
-    const int M = optixLaunchParams.samples_per_ring;
+    const int* ringSamples = optixLaunchParams.ring_samples;
     int sGlobal = 1; // progressivo per decorrelare φ tra anelli
 
     for (int ring = 1; ring <= optixLaunchParams.num_rings; ++ring) {
         const float cosHi = optixLaunchParams.ring_cos[ring - 1]; // bordo interno
         const float cosLo = optixLaunchParams.ring_cos[ring];     // bordo esterno
+        const int   N     = ringSamples[ring];                    // campioni di QUESTO anello
 
-        for (int s = 0; s < M; ++s, ++sGlobal) {
-            const float u    = ((float)s + 0.5f) / (float)M;
+        for (int s = 0; s < N; ++s, ++sGlobal) {
+            const float u    = ((float)s + 0.5f) / (float)N;
             const float cosT = cosLo + (cosHi - cosLo) * u;
             const float sinT = sqrtf(fmaxf(0.0f, 1.0f - cosT * cosT));
             const float phi  = (float)sGlobal * goldenAngle;

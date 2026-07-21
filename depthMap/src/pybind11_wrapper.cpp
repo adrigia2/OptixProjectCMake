@@ -434,6 +434,8 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def_readonly("count", &osc::SpecCone_Generator::TileResult::count)
 		.def_readonly("tile_texels", &osc::SpecCone_Generator::TileResult::tile_texels)
 		.def_readonly("num_levels", &osc::SpecCone_Generator::TileResult::num_levels)
+		.def_readonly("overflow", &osc::SpecCone_Generator::TileResult::overflow)
+		.def_readonly("requested", &osc::SpecCone_Generator::TileResult::requested)
 		.def_property_readonly("directions_np", [](osc::SpecCone_Generator::TileResult& r) {
 			py::ssize_t n = static_cast<py::ssize_t>(r.dirs.size());
 			py::object base = py::cast(&r);
@@ -491,11 +493,37 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("set_inputs", [](osc::SpecCone_Generator& self,
 				const IUM_Generator::Result& ium_res,
 				const std::vector<float>& cone_apertures_deg,
-				int samples_per_ring,
+				py::object samples_per_ring,
 				int tile_size) {
-			self.setInputs(ium_res, cone_apertures_deg, samples_per_ring, tile_size);
+			if (cone_apertures_deg.size() < 2)
+				throw py::value_error("cone_apertures_deg needs at least 2 values");
+			const size_t n_rings = cone_apertures_deg.size() - 1;
+
+			// Scalare (anche numpy.int64) → uniforme; sequenza → uno per anello.
+			std::vector<int> spr;
+			try {
+				spr.assign(n_rings, samples_per_ring.cast<int>());
+			} catch (const py::cast_error&) {
+				try {
+					spr = samples_per_ring.cast<std::vector<int>>();
+				} catch (const py::cast_error&) {
+					throw py::type_error(
+						"samples_per_ring must be an int (same count on every "
+						"ring) or a sequence of int of length "
+						"len(cone_apertures_deg)-1");
+				}
+				if (spr.size() != n_rings)
+					throw py::value_error(
+						"samples_per_ring: expected " + std::to_string(n_rings) +
+						" values (len(cone_apertures_deg)-1), got " +
+						std::to_string(spr.size()));
+			}
+			self.setInputs(ium_res, cone_apertures_deg, spr, tile_size);
 		}, py::arg("ium_result"), py::arg("cone_apertures_deg"),
-		   py::arg("samples_per_ring"), py::arg("tile_size") = 1024)
+		   py::arg("samples_per_ring"), py::arg("tile_size") = 1024,
+		   "samples_per_ring: int (same count on every ring) or list[int] of "
+		   "length len(cone_apertures_deg)-1 (rings 1..K-1; level 0 = mirror "
+		   "ray is always a single sample).")
 		.def("set_envmap", [](osc::SpecCone_Generator& self,
 				py::array_t<float, py::array::c_style | py::array::forcecast> skybox,
 				gdt::vec2i skybox_size,

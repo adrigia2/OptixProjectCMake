@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <string>
 
 extern "C" char embedded_ptx_code_speccone[];
 
@@ -132,6 +134,7 @@ void SpecCone_Generator::cleanup() {
     iumNormalsBuffer.free();
     iumMasksBuffer.free();
     ringCosBuffer.free();
+    ringSamplesBuffer.free();
     skyboxBuffer.free();
     visibilityBuffer.free();
 
@@ -151,9 +154,20 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
                                    int samplesPerRing,
                                    int tileSize)
 {
-    numPix      = (int)ium_result.positions.size();
-    tileSz      = tileSize;
-    samplesRing = samplesPerRing;
+    if (coneAperturesDeg.size() < 2)
+        throw std::runtime_error("SpecCone_Generator: need at least 2 cone apertures");
+    setInputs(ium_result, coneAperturesDeg,
+              std::vector<int>(coneAperturesDeg.size() - 1, samplesPerRing),
+              tileSize);
+}
+
+void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
+                                   const std::vector<float>& coneAperturesDeg,
+                                   const std::vector<int>& samplesPerRing,
+                                   int tileSize)
+{
+    numPix = (int)ium_result.positions.size();
+    tileSz = tileSize;
 
     if (numPix == 0)
         throw std::runtime_error("SpecCone_Generator: empty IUM positions");
@@ -161,8 +175,6 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
         throw std::runtime_error("SpecCone_Generator: IUM normals size mismatch");
     if (ium_result.masks.size() != (size_t)numPix)
         throw std::runtime_error("SpecCone_Generator: IUM masks size mismatch");
-    if (samplesPerRing <= 0)
-        throw std::runtime_error("SpecCone_Generator: samples_per_ring must be > 0");
     if (tileSize <= 0)
         throw std::runtime_error("SpecCone_Generator: tile_size must be > 0");
     if (coneAperturesDeg.size() < 2)
@@ -177,6 +189,21 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
     }
 
     numRings = (int)coneAperturesDeg.size() - 1;
+
+    if ((int)samplesPerRing.size() != numRings)
+        throw std::runtime_error(
+            "SpecCone_Generator: samples_per_ring has " +
+            std::to_string(samplesPerRing.size()) + " entries, expected " +
+            std::to_string(numRings) + " (one per ring = apertures - 1)");
+    for (int i = 0; i < numRings; ++i)
+        if (samplesPerRing[i] <= 0)
+            throw std::runtime_error("SpecCone_Generator: samples_per_ring[" +
+                                     std::to_string(i) + "] must be > 0");
+
+    // Campioni per livello: [0] = 1 (raggio specchio), poi un valore per anello
+    ringSamples.assign(numRings + 1, 1);
+    for (int i = 0; i < numRings; ++i)
+        ringSamples[i + 1] = samplesPerRing[i];
 
     // Bordi degli anelli: coseni delle semi-aperture (apertura totale / 2)
     std::vector<float> ringCos(coneAperturesDeg.size());
@@ -197,9 +224,23 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
     ringCosBuffer.resize(ringCos.size() * sizeof(float));
     ringCosBuffer.upload(ringCos.data(), ringCos.size());
 
-    // Buffer di tile (worst case: tutti i campioni colpiscono la geometria)
+    ringSamplesBuffer.resize(ringSamples.size() * sizeof(int));
+    ringSamplesBuffer.upload(ringSamples.data(), ringSamples.size());
+
+    // Buffer di tile (worst case: tutti i campioni colpiscono la geometria).
+    // Il conto va fatto in size_t: con tile grandi e molti campioni il prodotto
+    // sfora INT_MAX, e una capacità negativa azzererebbe i raggi scaricati.
     const int numLevels = numRings + 1;
-    tileCapacity = tileSz * (1 + numRings * samplesPerRing);
+    size_t raysPerTexel = 1;                       // livello 0 = raggio specchio
+    for (int i = 0; i < numRings; ++i)
+        raysPerTexel += (size_t)samplesPerRing[i];
+    const size_t capacity = (size_t)tileSz * raysPerTexel;
+    if (capacity > (size_t)std::numeric_limits<int>::max())
+        throw std::runtime_error(
+            "SpecCone_Generator: tile_capacity overflow (" +
+            std::to_string(capacity) + " rays); reduce tile_size (" +
+            std::to_string(tileSz) + ") or samples per ring");
+    tileCapacity = (int)capacity;
     tileRaysDirBuffer.resize(tileCapacity * sizeof(vec3f));
     tileRaysTHitBuffer.resize(tileCapacity * sizeof(float));
     tileRaysLocalIdxBuffer.resize(tileCapacity * sizeof(int));
@@ -213,9 +254,9 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
     launchParams.ium_data.ium_masks     = (uint8_t*)iumMasksBuffer.d_pointer();
     launchParams.ium_data.num_pixels    = numPix;
 
-    launchParams.ring_cos         = (float*)ringCosBuffer.d_pointer();
-    launchParams.num_rings        = numRings;
-    launchParams.samples_per_ring = samplesPerRing;
+    launchParams.ring_cos     = (float*)ringCosBuffer.d_pointer();
+    launchParams.num_rings    = numRings;
+    launchParams.ring_samples = (int*)ringSamplesBuffer.d_pointer();
 
     launchParams.tile_rays_dir       = (vec3f*)tileRaysDirBuffer.d_pointer();
     launchParams.tile_rays_t_hit     = (float*)tileRaysTHitBuffer.d_pointer();
@@ -229,8 +270,10 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
 
     launchParams.epsilon = 1e-4f;
 
-    LogManager::Log("SpecCone inputs ready: %d pixels, %d rings + mirror, %d samples/ring, tile_size=%d",
-                    numPix, numRings, samplesPerRing, tileSize);
+    LogManager::Log("SpecCone inputs ready: %d pixels, %d rings + mirror, "
+                    "%zu rays/texel, tile_size=%d, tile_capacity=%d (%.0f MB device)",
+                    numPix, numRings, raysPerTexel, tileSize, tileCapacity,
+                    tileCapacity * 24.0 / 1048576.0);
 }
 
 void SpecCone_Generator::setEnvmap(const std::vector<vec3f>& skybox,
@@ -309,12 +352,21 @@ SpecCone_Generator::TileResult SpecCone_Generator::renderTile(int tileIdx) {
 
     unsigned int count = 0;
     tileCounterBuffer.download(&count, 1);
+    const bool overflow = (count > (unsigned int)tileCapacity);
+    if (overflow)
+        LogManager::LogWarning(
+            "SpecCone tile %d: compact buffer OVERFLOW (%u rays requested > "
+            "capacity %d), %u samples dropped. Capacity is the exact worst "
+            "case, so this means tile_capacity and the kernel disagree.",
+            tileIdx, count, tileCapacity, count - (unsigned int)tileCapacity);
     const int clampedCount = std::min((int)count, tileCapacity);
 
     TileResult res;
     res.count       = clampedCount;
     res.tile_texels = actualTileSize;
     res.num_levels  = numLevels;
+    res.overflow    = overflow;
+    res.requested   = (int)std::min<unsigned int>(count, (unsigned int)std::numeric_limits<int>::max());
 
     if (clampedCount > 0) {
         res.dirs.resize(clampedCount);
