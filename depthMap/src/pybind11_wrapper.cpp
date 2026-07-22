@@ -12,6 +12,7 @@
 #include "Irradiance_Generator.h"
 #include "Indirect_Generator.h"
 #include "SpecCone_Generator.h"
+#include "HemiVis_Generator.h"
 #include "Frame.h"
 #include "ImageResultType.h"
 #include "LogManager.h"
@@ -554,6 +555,87 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("num_levels", &osc::SpecCone_Generator::numLevels)
 		.def("render_tile", [](osc::SpecCone_Generator& self, int tile_idx)
 				-> osc::SpecCone_Generator::TileResult {
+			return self.renderTile(tile_idx);
+		}, py::arg("tile_idx"), py::return_value_policy::move);
+
+	// --- HemiVisTileResult / HemiVisGenerator ---
+
+	py::class_<osc::HemiVis_Generator::TileResult>(m, "HemiVisTileResult")
+		.def_readonly("tile_texels", &osc::HemiVis_Generator::TileResult::tile_texels)
+		.def_readonly("num_samples", &osc::HemiVis_Generator::TileResult::num_samples)
+		.def_readonly("num_cams", &osc::HemiVis_Generator::TileResult::num_cams)
+		.def_property_readonly("t_hit_np", [](osc::HemiVis_Generator::TileResult& r) {
+			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
+			py::ssize_t s = static_cast<py::ssize_t>(r.num_samples);
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ t, s },
+				{ py::ssize_t(s * sizeof(float)), py::ssize_t(sizeof(float)) },
+				r.t_hit_shared.data(),
+				base
+			);
+		}, "t_hit dei raggi condivisi, shape (tile_texels, num_samples): "
+		   ">0 hit, 0 miss, <0 raggio non lanciato.")
+		.def_property_readonly("t_hit_mirror_np", [](osc::HemiVis_Generator::TileResult& r) {
+			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
+			py::ssize_t c = static_cast<py::ssize_t>(r.num_cams);
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ t, c },
+				{ py::ssize_t(c * sizeof(float)), py::ssize_t(sizeof(float)) },
+				r.t_hit_mirror.empty() ? nullptr : r.t_hit_mirror.data(),
+				base
+			);
+		}, "t_hit dei raggi specchio, shape (tile_texels, num_cams).")
+		.def_property_readonly("dirs_np", [](osc::HemiVis_Generator::TileResult& r) {
+			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
+			py::ssize_t s = static_cast<py::ssize_t>(r.num_samples);
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ t, s, py::ssize_t(3) },
+				{ py::ssize_t(s * sizeof(gdt::vec3f)), py::ssize_t(sizeof(gdt::vec3f)),
+				  py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.dirs_shared.empty() ? nullptr : r.dirs_shared.data()),
+				base
+			);
+		}, "Direzioni condivise tracciate (solo con set_debug_directions(True)).")
+		.def_property_readonly("dirs_mirror_np", [](osc::HemiVis_Generator::TileResult& r) {
+			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
+			py::ssize_t c = static_cast<py::ssize_t>(r.num_cams);
+			py::object base = py::cast(&r);
+			return py::array_t<float>(
+				{ t, c, py::ssize_t(3) },
+				{ py::ssize_t(c * sizeof(gdt::vec3f)), py::ssize_t(sizeof(gdt::vec3f)),
+				  py::ssize_t(sizeof(float)) },
+				reinterpret_cast<float*>(r.dirs_mirror.empty() ? nullptr : r.dirs_mirror.data()),
+				base
+			);
+		}, "Direzioni specchio tracciate (solo con set_debug_directions(True)).");
+
+	py::class_<osc::HemiVis_Generator>(m, "HemiVisGenerator")
+		.def(py::init<>())
+		.def("set_traversable", &osc::HemiVis_Generator::setTraversable, py::arg("model"))
+		.def("set_inputs", &osc::HemiVis_Generator::setInputs,
+			py::arg("ium_result"), py::arg("num_samples"), py::arg("tile_size") = 1024,
+			"num_samples = campioni Fibonacci condivisi per texel (S). Le direzioni "
+			"sono deterministiche e vanno ricostruite lato Python con la stessa "
+			"formula del kernel (vedi deviceProgramsHemiVis.cu).")
+		.def("set_cameras", [](osc::HemiVis_Generator& self,
+				const std::vector<gdt::vec3f>& cam_positions) {
+			self.setCameras(cam_positions);
+		}, py::arg("cam_positions"),
+		   "Posizioni mondo delle camere per i raggi specchio (lista vuota = nessuno).")
+		.def("set_debug_directions", &osc::HemiVis_Generator::setDebugDirections,
+			py::arg("enabled"),
+			"Restituisce anche le direzioni tracciate (dirs_np / dirs_mirror_np). "
+			"Serve al test di parità kernel↔torch; costa 12 B/raggio.")
+		.def("num_tiles", &osc::HemiVis_Generator::numTiles)
+		.def("tile_size", &osc::HemiVis_Generator::tileSize)
+		.def("num_pixels", &osc::HemiVis_Generator::numPixels)
+		.def("num_samples", &osc::HemiVis_Generator::numSamples)
+		.def("num_cameras", &osc::HemiVis_Generator::numCameras)
+		.def("render_tile", [](osc::HemiVis_Generator& self, int tile_idx)
+				-> osc::HemiVis_Generator::TileResult {
 			return self.renderTile(tile_idx);
 		}, py::arg("tile_idx"), py::return_value_policy::move);
 
