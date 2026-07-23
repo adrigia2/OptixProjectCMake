@@ -46,6 +46,11 @@ namespace osc {
         // Output: per-camera, camera-major [cam * num_pixels + pixel]
         // (ogni slice di camera è contigua → download per-camera senza stride)
         vec3f* camera_color_output;
+        // Maschera per-camera, stessa disposizione camera-major. 1 = la camera
+        // contribuisce (IUM valido ∧ occlusione ∧ non-grazing ∧ dentro frame),
+        // 0 altrimenti. Scritta PRIMA del filtro peak → source-indipendente,
+        // riutilizzabile come visibility condivisa.
+        uint8_t* camera_mask_output;
     };
 
 } // namespace osc

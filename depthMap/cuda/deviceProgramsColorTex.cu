@@ -25,8 +25,10 @@ extern "C" __global__ void __raygen__colorTex()
         optixLaunchParams.color_max_output[idx]      = vec3f(0.f, 0.f, 0.f);
         optixLaunchParams.color_variance_output[idx] = vec3f(0.f, 0.f, 0.f);
         const int num_cameras_early = optixLaunchParams.num_cameras;
-        for (int k = 0; k < num_cameras_early; ++k)
+        for (int k = 0; k < num_cameras_early; ++k) {
             optixLaunchParams.camera_color_output[size_t(k) * optixLaunchParams.num_pixels + idx] = vec3f(0.f, 0.f, 0.f);
+            optixLaunchParams.camera_mask_output[size_t(k) * optixLaunchParams.num_pixels + idx] = 0;
+        }
         return;
     }
 
@@ -40,7 +42,8 @@ extern "C" __global__ void __raygen__colorTex()
     vec3f local_max = {0.f, 0.f, 0.f};
 
     for (int k = 0; k < num_cameras; ++k) {
-        vec3f cam_color = vec3f(0.f, 0.f, 0.f);
+        vec3f   cam_color = vec3f(0.f, 0.f, 0.f);
+        uint8_t cam_valid = 0;   // 1 = la camera contribuisce (pre-peak)
 
         // Skip occluded cameras
         if (optixLaunchParams.visibility[idx * num_cameras + k] != 0) {
@@ -57,6 +60,7 @@ extern "C" __global__ void __raygen__colorTex()
                 const vec3f n = optixLaunchParams.ium_normals[idx];
                 if (-dot(n, d) < optixLaunchParams.grazing_min_cos * length(d)) {
                     optixLaunchParams.camera_color_output[size_t(k) * optixLaunchParams.num_pixels + idx] = vec3f(0.f, 0.f, 0.f);
+                    optixLaunchParams.camera_mask_output[size_t(k) * optixLaunchParams.num_pixels + idx] = 0;
                     continue;
                 }
             }
@@ -73,6 +77,11 @@ extern "C" __global__ void __raygen__colorTex()
                     const int py = (int)(uv_y * cam.frame_size.y);
 
                     if (px >= 0 && px < cam.frame_size.x && py >= 0 && py < cam.frame_size.y) {
+                        // Il texel proietta in un pixel valido, non occluso, non di
+                        // taglio: la camera lo "vede" (indipendente dal peak, quindi
+                        // source-indipendente → usabile come visibility condivisa).
+                        cam_valid = 1;
+
                         const vec3f color = cam.image_ptr[py * cam.frame_size.x + px];
 
                         // Discard overexposed pixels
@@ -99,6 +108,7 @@ extern "C" __global__ void __raygen__colorTex()
         }
 
         optixLaunchParams.camera_color_output[size_t(k) * optixLaunchParams.num_pixels + idx] = cam_color;
+        optixLaunchParams.camera_mask_output[size_t(k) * optixLaunchParams.num_pixels + idx] = cam_valid;
     }
 
     if (count > 0) {

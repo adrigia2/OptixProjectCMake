@@ -333,6 +333,14 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				cam, reinterpret_cast<gdt::vec3f*>(out.mutable_data()));
 			return out;
 		}, py::arg("cam"))
+		// Maschera per-camera (uint8, shape (num_pixels,)): 1 = la camera contribuisce
+		// (occlusione ∧ frustum ∧ grazing, pre-peak → source-indipendente).
+		.def("download_camera_mask", [](osc::ColorTex_Generator& self, int cam) {
+			py::ssize_t n = static_cast<py::ssize_t>(self.numPixels());
+			py::array_t<uint8_t> out(n);
+			self.downloadCameraMask(cam, out.mutable_data());
+			return out;
+		}, py::arg("cam"))
 		.def("get_result", [](osc::ColorTex_Generator& self) -> osc::ColorTex_Generator::Result {
 			return self.getResult();
 		}, py::return_value_policy::move);

@@ -51,6 +51,11 @@ public:
     // contiguous and downloaded on demand. Valid after render(), until cleanup().
     void downloadCameraColors(int cam, vec3f* dst) const;
 
+    // Maschera per-camera (uint8, 1 = la camera contribuisce), stessa disposizione
+    // camera-major dei colori. Scritta pre-peak → source-indipendente, riusabile
+    // come visibility condivisa. Valida dopo render(), fino a cleanup().
+    void downloadCameraMask(int cam, uint8_t* dst) const;
+
     int numPixels()  const { return launchParams.num_pixels; }
     int numCameras() const { return launchParams.num_cameras; }
 
@@ -69,6 +74,7 @@ private:
     CUDABuffer              colorMaxOutputBuffer;
     CUDABuffer              colorVarianceOutputBuffer;
     CUDABuffer              cameraColorOutputBuffer;
+    CUDABuffer              cameraMaskOutputBuffer;
     Result                  result;
 };
 

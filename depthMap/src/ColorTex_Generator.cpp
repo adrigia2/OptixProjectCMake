@@ -126,6 +126,10 @@ void ColorTex_Generator::setInputs(
     cameraColorOutputBuffer.alloc(camColorBytes);
     cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0, camColorBytes);
 
+    const size_t camMaskBytes = size_t(num_pixels) * num_cameras * sizeof(uint8_t);
+    cameraMaskOutputBuffer.alloc(camMaskBytes);
+    cudaMemset((void*)cameraMaskOutputBuffer.d_pointer(), 0, camMaskBytes);
+
     launchParams.ium_positions        = (vec3f*)iumPositionsBuffer.d_pointer();
     // ium_normals and grazing_min_cos already set above
     launchParams.ium_masks            = (uint8_t*)iumMasksBuffer.d_pointer();
@@ -138,6 +142,7 @@ void ColorTex_Generator::setInputs(
     launchParams.color_max_output      = (vec3f*)colorMaxOutputBuffer.d_pointer();
     launchParams.color_variance_output = (vec3f*)colorVarianceOutputBuffer.d_pointer();
     launchParams.camera_color_output   = (vec3f*)cameraColorOutputBuffer.d_pointer();
+    launchParams.camera_mask_output    = (uint8_t*)cameraMaskOutputBuffer.d_pointer();
 }
 
 void ColorTex_Generator::render() {
@@ -187,6 +192,17 @@ void ColorTex_Generator::downloadCameraColors(int cam, vec3f* dst) const {
     CUDA_CHECK(Memcpy((void*)dst, (void*)src, sliceBytes, cudaMemcpyDeviceToHost));
 }
 
+void ColorTex_Generator::downloadCameraMask(int cam, uint8_t* dst) const {
+    if (launchParams.num_pixels == 0)
+        throw std::runtime_error("ColorTex_Generator::downloadCameraMask: call setInputs first");
+    if (cam < 0 || cam >= launchParams.num_cameras)
+        throw std::out_of_range("ColorTex_Generator::downloadCameraMask: camera index out of range");
+
+    const size_t sliceBytes = size_t(launchParams.num_pixels) * sizeof(uint8_t);
+    const CUdeviceptr src = cameraMaskOutputBuffer.d_pointer() + size_t(cam) * sliceBytes;
+    CUDA_CHECK(Memcpy((void*)dst, (void*)src, sliceBytes, cudaMemcpyDeviceToHost));
+}
+
 void ColorTex_Generator::cleanup() {
     OptixActor::cleanup();
     iumPositionsBuffer.free();
@@ -202,6 +218,7 @@ void ColorTex_Generator::cleanup() {
     colorMaxOutputBuffer.free();
     colorVarianceOutputBuffer.free();
     cameraColorOutputBuffer.free();
+    cameraMaskOutputBuffer.free();
 }
 
 } // namespace osc
