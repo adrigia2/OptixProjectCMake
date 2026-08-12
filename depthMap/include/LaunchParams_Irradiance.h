@@ -28,7 +28,8 @@ namespace osc {
             float  yaw_offset_u; // = yaw_radians / (2π) — shift su asse U per rotazione yaw
         } skybox;
 
-        int   sample_side;       // N → N×N campioni Monte Carlo per texel
+        int   sample_side;       // N → N×N direzioni per texel, spirale di Fibonacci
+                                 // deterministica (non è un campionamento casuale)
         float epsilon;           // offset self-intersection lungo la normale
 
         OptixTraversableHandle traversable;

@@ -124,7 +124,7 @@ vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_
 //         }
 //     }
 //
-//     // Scaling Monte Carlo: (2π / |S|), con |S| = N*N
+//     // Scaling della quadratura: (2π / |S|), con |S| = N*N
 //     const float scale = (2.0f * M_PIf) * invN * invN;
 //     optixLaunchParams.results.irradiance[idx] = accum * scale;
 // }
