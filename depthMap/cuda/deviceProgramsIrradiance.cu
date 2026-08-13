@@ -5,6 +5,13 @@
 #define M_PIf 3.14159265358979323846f
 #endif
 
+// Angolo aureo espresso come frazione di giro: PI*(3-sqrt(5)) / (2*PI) = (3-sqrt(5))/2.
+// E' il complemento di HEMIVIS_INV_GOLDEN (1/phi) usato in deviceProgramsHemiVis.cu:
+// stessa sequenza a bassa discrepanza, verso azimutale opposto. Qui si tiene questo
+// verso per non alterare il pattern gia' prodotto dal kernel.
+#define IRR_GOLDEN_TURN 0.3819660112501051518   // (3 - sqrt(5))/2
+#define IRR_TWO_PI      6.283185307179586477
+
 using namespace osc;
 
 namespace irr {
@@ -158,9 +165,6 @@ extern "C" __global__ void __raygen__renderIrradiance()
     const float eps = optixLaunchParams.epsilon;
     const vec3f origin = pos + n * eps;
 
-    // L'angolo aureo in radianti: PI * (3 - sqrt(5))
-    const float goldenAngle = M_PIf * (3.0f - sqrtf(5.0f));
-
     vec3f accum(0.f);
 
     // Un singolo loop basato sul numero totale di campioni
@@ -172,8 +176,17 @@ extern "C" __global__ void __raygen__renderIrradiance()
         // raggio nel piano XY locale
         const float r = sqrtf(fmaxf(0.0f, 1.0f - z * z));
 
-        // azimut basato sull'angolo aureo
-        const float phi = (float)i * goldenAngle;
+        // Azimut sulla sequenza aurea: aritmetica in doppia precisione, ridotta in
+        // [0,1) PRIMA della trigonometria. Calcolato come (float)i * goldenAngle,
+        // a sample_side=512 (S=262144) phi arriva a 6.3e5 rad, dove un solo ULP
+        // float32 vale 0.0625 rad (3.58 gradi): la sequenza perde la bassa
+        // discrepanza (gap azimutale massimo 5.0x l'ideale contro 1.56x in doppia).
+        // L'errore e' invisibile ai default (0.014 gradi a S=256) e cresce con S,
+        // quindi alzare i campioni ne restituiva indietro una parte.
+        // Stesso accorgimento di sharedDirection() in deviceProgramsHemiVis.cu.
+        double xphi = (double)i * IRR_GOLDEN_TURN;
+        xphi -= floor(xphi);
+        const float phi = (float)(xphi * IRR_TWO_PI);
 
         // Direzione nello spazio tangente
         const vec3f local(r * cosf(phi), r * sinf(phi), z);
