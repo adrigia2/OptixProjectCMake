@@ -6,6 +6,7 @@ build-backend = "scikit_build_core.build"
 name = "OptixProgrammablePasses"
 version = "0.1.0"
 description = "OptiX ray-tracing passes (depth, IUM, visibility, colour texture, irradiance, indirect, specular cones) exposed to Python"
+readme = "README.md"
 requires-python = ">=3.9"
 
 # The OptiX SDK location is NOT pinned here on purpose. CMakeLists.txt resolves it
