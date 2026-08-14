@@ -75,6 +75,15 @@ add_subdirectory(${gdt_dir} EXCLUDE_FROM_ALL)
 
 include_directories(common)
 add_subdirectory(common/glfWindow EXCLUDE_FROM_ALL)
+
+# Everything else under common/ is vendored into the repository, but pybind11 is a git
+# submodule, so a clone made without --recurse-submodules leaves it empty. Say so, instead
+# of letting add_subdirectory fail with a generic "does not contain a CMakeLists.txt".
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/common/pybind11/CMakeLists.txt")
+  message(FATAL_ERROR
+    "common/pybind11 is empty: it is a git submodule.\n"
+    "Run:  git submodule update --init --recursive")
+endif()
 add_subdirectory(common/pybind11)
 
 # ── This project ──────────────────────────────────────────────────────────────

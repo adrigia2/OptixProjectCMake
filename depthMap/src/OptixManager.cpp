@@ -61,10 +61,34 @@ void OptixManager::createContext()
 
 void OptixManager::cleanup()
 {
-    //OPTIX_CHECK(optixPipelineDestroy(pipeline));
-    //OPTIX_CHECK(optixModuleDestroy(module));
-	OPTIX_CHECK(optixDeviceContextDestroy(optixContext));
-	LogManager::Log("Cleaned up Optix");
+    if (optixContext == nullptr)
+        return;
+
+    // This runs from ~OptixManager(), and the instance is a function-local static, so the
+    // destructor fires during process teardown. When the module is loaded from Python, the
+    // CUDA runtime is already unloaded by then and the context cannot be destroyed any more.
+    //
+    // Two reasons not to just call OPTIX_CHECK here:
+    //   * the call would fail with 7052, which is expected rather than an error;
+    //   * OPTIX_CHECK ends in exit(2), and calling exit() from a static destructor that is
+    //     itself running inside exit() is undefined behaviour -- on MSVC it fail-fasts with
+    //     0xC0000409 (STATUS_STACK_BUFFER_OVERRUN), which is what turned an otherwise clean
+    //     run into an abnormal exit.
+    // CUDABuffer's destructor avoids CUDA_CHECK for the same reason, see CUDABuffer.h.
+    CUcontext current = nullptr;
+    if (cuCtxGetCurrent(&current) != CUDA_SUCCESS) {
+        // CUDA is gone; the driver has already reclaimed the context.
+        optixContext = nullptr;
+        return;
+    }
+
+    const OptixResult res = optixDeviceContextDestroy(optixContext);
+    optixContext = nullptr;
+    if (res != OPTIX_SUCCESS) {
+        LogManager::LogError("optixDeviceContextDestroy failed with code %d", (int)res);
+        return;
+    }
+    LogManager::Log("Cleaned up Optix");
 }
 
 void OptixManager::setLogLevel(LogManager::Level level)
