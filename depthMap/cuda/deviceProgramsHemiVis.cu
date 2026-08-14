@@ -11,14 +11,14 @@ namespace hemivis {
 
 extern "C" __constant__ LaunchParams_HemiVis optixLaunchParams;
 
-// Costanti della sequenza di Fibonacci, in doppia precisione.
-// Sono replicate BIT PER BIT lato Python (_hemi_directions in images_generator.py):
-// qualunque divergenza appaierebbe ogni t_hit alla direzione sbagliata, senza
-// alcun sintomo visibile se non una L_j sbagliata. Vedi test_hemivis_shared.py.
-#define HEMIVIS_INV_GOLDEN 0.6180339887498948482   // 1/φ = (√5 − 1)/2
+// Constants of the Fibonacci sequence, in double precision.
+// They are replicated BIT FOR BIT on the Python side (_hemi_directions in
+// images_generator.py): any divergence would pair every t_hit with the wrong
+// direction, with no visible symptom other than a wrong L_j. See test_hemivis_shared.py.
+#define HEMIVIS_INV_GOLDEN 0.6180339887498948482   // 1/phi = (sqrt(5) - 1)/2
 #define HEMIVIS_TWO_PI     6.283185307179586477
 
-// Frisvad 2012 branchless ONB (identico a deviceProgramsSpecCone.cu)
+// Frisvad 2012 branchless ONB (identical to deviceProgramsSpecCone.cu)
 static __forceinline__ __device__
 void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 {
@@ -29,9 +29,9 @@ void buildONB(const vec3f& n, vec3f& T, vec3f& B)
     B = vec3f(b, sgn + n.y * n.y * a, -n.y);
 }
 
-// Hash intero (lowbias32) → rotazione azimutale in [0, 1) per texel.
-// Decorrela il pattern QMC tra texel vicini: senza, l'insieme di direzioni è lo
-// stesso a meno della ONB e il rumore si allinea in bande visibili sull'atlante.
+// Integer hash (lowbias32) -> per-texel azimuthal rotation in [0, 1).
+// Decorrelates the QMC pattern between neighbouring texels: without it the direction
+// set is the same up to the ONB and the noise lines up into bands visible on the atlas.
 static __forceinline__ __device__
 double rotationFromIndex(unsigned int x)
 {
@@ -43,11 +43,11 @@ double rotationFromIndex(unsigned int x)
     return (double)(x >> 8) * (1.0 / 16777216.0);
 }
 
-// Direzione condivisa s-esima attorno alla normale n (uniforme in angolo solido
-// sull'emisfero: cosθ equispaziato, azimut sulla sequenza aurea).
-// L'aritmetica di φ è in doppia precisione e ridotta in [0, 2π) PRIMA della
-// trigonometria: in float32 s·goldenAngle arriva a ~4·10⁴ rad, dove un solo ULP
-// vale già 0.004 rad (0.23°), abbastanza da spostare un campione di anello.
+// s-th shared direction around the normal n (uniform in solid angle over the
+// hemisphere: cos(theta) equispaced, azimuth on the golden sequence).
+// The arithmetic on phi is in double precision and reduced to [0, 2*pi) BEFORE the
+// trigonometry: in float32, s*goldenAngle reaches ~4e4 rad, where a single ULP is
+// already 0.004 rad (0.23 degrees), enough to move a ring sample.
 static __forceinline__ __device__
 vec3f sharedDirection(int s, int numSamples, double rot,
                       const vec3f& n, const vec3f& T, const vec3f& B)
@@ -62,7 +62,7 @@ vec3f sharedDirection(int s, int numSamples, double rot,
     return T * (sinT * cosf(phi)) + B * (sinT * sinf(phi)) + n * cosT;
 }
 
-// Traccia un raggio di sola visibilità e restituisce la distanza di hit
+// Trace a visibility-only ray and return the hit distance
 // (0 = miss, > 0 = hit).
 static __forceinline__ __device__
 float traceVisibility(const vec3f& origin, const vec3f& dir)
@@ -81,13 +81,13 @@ float traceVisibility(const vec3f& origin, const vec3f& dir)
                occluded, t_hit_bits);
 
     if (occluded == 0u) return 0.0f;
-    // 0 è riservato al miss: un hit degenere a distanza nulla verrebbe letto come
-    // cielo lato Python, quindi lo si tiene strettamente positivo.
+    // 0 is reserved for a miss: a degenerate hit at zero distance would read as sky
+    // on the Python side, so it is kept strictly positive.
     return fmaxf(__uint_as_float(t_hit_bits), 1e-8f);
 }
 
-// Legge posizione e normale normalizzata del texel; false se il texel non è
-// utilizzabile (fuori maschera oppure normale degenere).
+// Read the texel's position and normalised normal; false when the texel is unusable
+// (outside the mask, or degenerate normal).
 static __forceinline__ __device__
 bool loadTexel(int global_idx, vec3f& pos, vec3f& n)
 {
@@ -103,16 +103,16 @@ bool loadTexel(int global_idx, vec3f& pos, vec3f& n)
 }
 
 // ----------------------------------------------------------------------------
-// Raygen — un thread per raggio.
-//   MODE_SHARED: lancio (tile_size, num_samples), raggi condivisi tra tutte le camere
-//   MODE_MIRROR: lancio (tile_size, num_cams),    raggio specchio della camera j
-// Ogni thread scrive sempre il proprio slot (anche i casi degeneri, con un valore
-// negativo), così i buffer di output non vanno azzerati tra un tile e l'altro.
+// Raygen -- one thread per ray.
+//   MODE_SHARED: launch (tile_size, num_samples), rays shared between all cameras
+//   MODE_MIRROR: launch (tile_size, num_cams),    mirror ray of camera j
+// Every thread always writes its own slot (degenerate cases included, with a negative
+// value), so the output buffers do not have to be cleared between tiles.
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __raygen__hemiVis()
 {
     const int local_idx = optixGetLaunchIndex().x;
-    const int lane      = optixGetLaunchIndex().y;   // campione oppure camera
+    const int lane      = optixGetLaunchIndex().y;   // sample, or camera
 
     if (local_idx >= optixLaunchParams.tile_size) return;
 
@@ -151,7 +151,7 @@ extern "C" __global__ void __raygen__hemiVis()
         v = v * (1.0f / vLen);
 
         const float nv = n.x * v.x + n.y * v.y + n.z * v.z;
-        if (nv <= 0.0f) { *out = -1.0f; return; }   // camera dietro la superficie
+        if (nv <= 0.0f) { *out = -1.0f; return; }   // camera behind the surface
 
         const vec3f R = n * (2.0f * nv) - v;
         if (dbg) *dbg = R;
@@ -160,7 +160,7 @@ extern "C" __global__ void __raygen__hemiVis()
 }
 
 // ----------------------------------------------------------------------------
-// Miss — cielo visibile → occluded = 0
+// Miss -- sky visible -> occluded = 0
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __miss__hemiVis()
 {
@@ -168,7 +168,7 @@ extern "C" __global__ void __miss__hemiVis()
 }
 
 // ----------------------------------------------------------------------------
-// Closest hit — raggio bloccato dalla geometria: occluded = 1, t_hit = tmax
+// Closest hit -- ray blocked by geometry: occluded = 1, t_hit = tmax
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __closesthit__hemiVis()
 {

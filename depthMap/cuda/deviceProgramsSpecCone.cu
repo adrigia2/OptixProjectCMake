@@ -11,7 +11,7 @@ namespace speccone {
 
 extern "C" __constant__ LaunchParams_SpecCone optixLaunchParams;
 
-// Frisvad 2012 branchless ONB (identico a deviceProgramsIrradiance.cu)
+// Frisvad 2012 branchless ONB (identical to deviceProgramsIrradiance.cu)
 static __forceinline__ __device__
 void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 {
@@ -22,7 +22,7 @@ void buildONB(const vec3f& n, vec3f& T, vec3f& B)
     B = vec3f(b, sgn + n.y * n.y * a, -n.y);
 }
 
-// Equirectangular envmap lookup — identico a deviceProgramsIrradiance.cu
+// Equirectangular envmap lookup -- identical to deviceProgramsIrradiance.cu
 // (world space Z-up, Y-forward, Blender native)
 static __forceinline__ __device__
 vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_u)
@@ -43,10 +43,10 @@ vec3f sampleEnvmap(const vec3f& d, const vec3f* env, vec2i sz, float yaw_offset_
     return env[py * sz.x + px];
 }
 
-// Traccia un singolo campione del cono: miss → accumula envmap in sky_sum,
-// hit → slot nel buffer compatto per la query NeRF lato Python.
-// In entrambi i casi il campione conta in valid_count (la media per livello
-// deve includere sia cielo che geometria).
+// Trace a single cone sample: miss -> accumulate the envmap into sky_sum,
+// hit -> a slot in the compact buffer for the NeRF query on the Python side.
+// In both cases the sample counts in valid_count (the per-level mean has to include
+// both sky and geometry).
 static __forceinline__ __device__
 void traceSample(const vec3f& origin, const vec3f& dir, int level,
                  int local_idx, vec3f* skySum, int* validCount)
@@ -75,10 +75,10 @@ void traceSample(const vec3f& origin, const vec3f& dir, int level,
     } else {
         const unsigned int slot = atomicAdd(optixLaunchParams.tile_counter, 1u);
         if (slot >= (unsigned int)optixLaunchParams.tile_capacity)
-            return;   // buffer pieno: il campione non contribuirà mai al numeratore,
-                      // quindi non deve nemmeno entrare nel denominatore (come i
-                      // raggi sotto l'orizzonte). L'overflow degrada la varianza,
-                      // non introduce bias. Il conteggio è segnalato dall'host.
+            return;   // buffer full: the sample will never contribute to the numerator,
+                      // so it must not enter the denominator either (like the rays
+                      // below the horizon). Overflow degrades the variance, it does
+                      // not introduce bias. The host reports the count.
         optixLaunchParams.tile_rays_dir[slot]       = dir;
         optixLaunchParams.tile_rays_t_hit[slot]     = __uint_as_float(t_hit_bits);
         optixLaunchParams.tile_rays_local_idx[slot] = local_idx;
@@ -88,13 +88,13 @@ void traceSample(const vec3f& origin, const vec3f& dir, int level,
 }
 
 // ----------------------------------------------------------------------------
-// Raygen — un thread per texel del tile. Per la camera corrente costruisce il
-// raggio riflesso R = reflect(v, n) e campiona anelli concentrici attorno a R
-// (cosθ uniforme per anello = uniforme in angolo solido). Livello 0 = raggio
-// specchio puro. Ogni anello ha il proprio numero di campioni ring_samples[i],
-// così da poter dare agli anelli esterni una densità angolare confrontabile con
-// quella degli interni (l'ultimo copre ~45× l'angolo solido del primo).
-// I coni L(r_k) si ricostruiscono lato Python pesando gli anelli per Ω_i/N_i.
+// Raygen -- one thread per texel of the tile. For the current camera it builds the
+// reflected ray R = reflect(v, n) and samples concentric rings around R
+// (cos(theta) uniform per ring = uniform in solid angle). Level 0 = the pure mirror
+// ray. Each ring has its own sample count ring_samples[i], so the outer rings can be
+// given an angular density comparable to the inner ones (the last covers ~45x the
+// solid angle of the first).
+// The cones L(r_k) are reconstructed on the Python side by weighting the rings by Omega_i/N_i.
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __raygen__specCone()
 {
@@ -121,7 +121,7 @@ extern "C" __global__ void __raygen__specCone()
     v = v * (1.0f / vLen);
 
     const float nv = n.x*v.x + n.y*v.y + n.z*v.z;
-    if (nv <= 0.0f) return;   // camera dietro la superficie (backface)
+    if (nv <= 0.0f) return;   // camera behind the surface (backface)
 
     const vec3f R = n * (2.0f * nv) - v;
 
@@ -136,16 +136,16 @@ extern "C" __global__ void __raygen__specCone()
     const vec3f origin      = pos + n * eps;
     const float goldenAngle = M_PIf * (3.0f - sqrtf(5.0f));
 
-    // Livello 0: raggio specchio puro (anello degenere di apertura 0)
+    // Level 0: the pure mirror ray (a degenerate ring of aperture 0)
     traceSample(origin, R, 0, local_idx, skySum, validCount);
 
     const int* ringSamples = optixLaunchParams.ring_samples;
-    int sGlobal = 1; // progressivo per decorrelare φ tra anelli
+    int sGlobal = 1; // running index, decorrelates phi between rings
 
     for (int ring = 1; ring <= optixLaunchParams.num_rings; ++ring) {
-        const float cosHi = optixLaunchParams.ring_cos[ring - 1]; // bordo interno
-        const float cosLo = optixLaunchParams.ring_cos[ring];     // bordo esterno
-        const int   N     = ringSamples[ring];                    // campioni di QUESTO anello
+        const float cosHi = optixLaunchParams.ring_cos[ring - 1]; // inner edge
+        const float cosLo = optixLaunchParams.ring_cos[ring];     // outer edge
+        const int   N     = ringSamples[ring];                    // samples of THIS ring
 
         for (int s = 0; s < N; ++s, ++sGlobal) {
             const float u    = ((float)s + 0.5f) / (float)N;
@@ -157,7 +157,7 @@ extern "C" __global__ void __raygen__specCone()
                             + B * (sinT * sinf(phi))
                             + R * cosT;
 
-            // Scarta i campioni sotto l'orizzonte della superficie
+            // Discard the samples below the surface horizon
             if (dir.x*n.x + dir.y*n.y + dir.z*n.z <= 0.0f) continue;
 
             traceSample(origin, dir, ring, local_idx, skySum, validCount);
@@ -166,7 +166,7 @@ extern "C" __global__ void __raygen__specCone()
 }
 
 // ----------------------------------------------------------------------------
-// Miss — raggio non ha colpito nulla (cielo visibile) → occluded = 0
+// Miss -- the ray hit nothing (sky visible) -> occluded = 0
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __miss__specCone()
 {
@@ -174,7 +174,7 @@ extern "C" __global__ void __miss__specCone()
 }
 
 // ----------------------------------------------------------------------------
-// Closest hit — raggio bloccato dalla geometria: occluded = 1, t_hit = tmax
+// Closest hit -- ray blocked by geometry: occluded = 1, t_hit = tmax
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __closesthit__specCone()
 {

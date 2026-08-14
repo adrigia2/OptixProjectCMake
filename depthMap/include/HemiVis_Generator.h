@@ -8,36 +8,36 @@
 
 namespace osc {
 
-// Oracolo di visibilità emisferico condiviso tra camere.
+// Hemispherical visibility oracle, shared between cameras.
 //
-// Per ogni texel IUM traccia un set Fibonacci fisso di `numSamples` raggi uniformi
-// in angolo solido sull'emisfero sopra la normale e restituisce solo il t_hit di
-// ciascuno; le direzioni sono deterministiche e vengono ricostruite lato Python,
-// dove avvengono lookup envmap, query NeRF e classificazione per camera. Lo stesso
-// raggio (e la sua query NeRF) serve quindi tutte le camere che vedono il texel,
-// perché la radianza incidente lungo una direzione non dipende dalla camera.
+// For every IUM texel it traces a fixed Fibonacci set of `numSamples` rays uniform
+// in solid angle over the hemisphere above the normal and returns only the t_hit of
+// each one; the directions are deterministic and are rebuilt on the Python side,
+// where the envmap lookup, the NeRF query and the per-camera classification happen.
+// One ray (and its NeRF query) therefore serves every camera that sees the texel,
+// because the incident radiance along a direction does not depend on the camera.
 //
-// I raggi specchio R_j = reflect(v_j, n) restano per-camera e si ottengono con una
-// seconda passata sullo stesso tile (t_hit_mirror).
+// The mirror rays R_j = reflect(v_j, n) stay per-camera and come from a second
+// pass over the same tile (t_hit_mirror).
 //
-// Alternativa a SpecCone_Generator, che campiona ad anelli attorno a R_j e va
-// quindi rilanciato per ogni camera; entrambi restano disponibili.
+// Alternative to SpecCone_Generator, which samples in rings around R_j and so has to
+// be relaunched for every camera; both remain available.
 class HemiVis_Generator : public OptixActor
 {
 public:
     struct TileResult
     {
-        int tile_texels;   // texel effettivi di questo tile
-        int num_samples;   // S, campioni condivisi per texel
-        int num_cams;      // camere per i raggi specchio
+        int tile_texels;   // texels actually in this tile
+        int num_samples;   // S, shared samples per texel
+        int num_cams;      // cameras for the mirror rays
 
-        // t_hit per raggio, denso (nessuna compattazione, nessun contatore):
-        //   > 0 → hit, distanza;  = 0 → miss (cielo);  < 0 → raggio non lanciato
-        //   (texel fuori maschera, normale degenere, camera dietro la superficie)
+        // t_hit per ray, dense (no compaction, no counters):
+        //   > 0 -> hit, distance;  = 0 -> miss (sky);  < 0 -> ray not launched
+        //   (texel outside the mask, degenerate normal, camera behind the surface)
         std::vector<float> t_hit_shared;   // [tile_texels * num_samples]
         std::vector<float> t_hit_mirror;   // [tile_texels * num_cams]
 
-        // Direzioni tracciate, non vuote solo con setDebugDirections(true)
+        // Traced directions, non-empty only with setDebugDirections(true)
         std::vector<vec3f> dirs_shared;    // [tile_texels * num_samples]
         std::vector<vec3f> dirs_mirror;    // [tile_texels * num_cams]
     };
@@ -60,19 +60,19 @@ public:
     void setTraversable(const TriangleMesh& model) override;
     void cleanup() override;
 
-    // Input IUM + numero di campioni condivisi per texel + texel per tile.
+    // IUM input + number of shared samples per texel + texels per tile.
     void setInputs(const IUM_Generator::Result& ium_result,
                    int numSamples,
                    int tileSize = 1024);
 
-    // Posizioni mondo delle camere per i raggi specchio (vuoto → nessun raggio
-    // specchio, t_hit_mirror resta vuoto).
+    // World positions of the cameras for the mirror rays (empty -> no mirror ray,
+    // t_hit_mirror stays empty).
     void setCameras(const std::vector<vec3f>& camPositions);
 
-    // Restituisce anche le direzioni tracciate. Serve al test di parità
-    // kernel↔torch: la ricostruzione lato Python è indicizzata per posizione,
-    // quindi una divergenza delle formule non ha altri sintomi che una L_j
-    // sbagliata. Costa 12 B/raggio di device e di banda: non usare in produzione.
+    // Also returns the traced directions. This is what the kernel<->torch parity
+    // test needs: the Python-side reconstruction is indexed by position, so a
+    // divergence between the two formulas has no symptom other than a wrong L_j.
+    // Costs 12 B/ray of device memory and bandwidth: do not use in production.
     void setDebugDirections(bool enabled);
 
     int numTiles() const;
@@ -81,7 +81,7 @@ public:
     int numSamples() const { return numSmp; }
     int numCameras() const { return (int)camPos.size(); }
 
-    // Lancia OptiX sul tile (due passate: condivisa + specchio), scarica i t_hit.
+    // Launch OptiX on the tile (two passes: shared + mirror), download the t_hits.
     TileResult renderTile(int tileIdx);
 
 protected:
@@ -91,13 +91,13 @@ protected:
     CUDABuffer indexBuffer;
     CUDABuffer asBuffer;
 
-    // Input permanenti
+    // Persistent inputs
     CUDABuffer iumPositionsBuffer;
     CUDABuffer iumNormalsBuffer;
     CUDABuffer iumMasksBuffer;
     CUDABuffer camPosBuffer;
 
-    // Buffer di tile
+    // Tile buffers
     CUDABuffer tHitSharedBuffer;
     CUDABuffer tHitMirrorBuffer;
     CUDABuffer dbgDirsBuffer;
@@ -108,8 +108,8 @@ protected:
     bool debugDirs = false;
     std::vector<vec3f> camPos;
 
-    // zero-init: dbg_dirs/cam_pos/t_hit_mirror restano nullptr finché non servono,
-    // e il kernel testa dbg_dirs per decidere se scrivere le direzioni
+    // zero-init: dbg_dirs/cam_pos/t_hit_mirror stay nullptr until they are needed,
+    // and the kernel tests dbg_dirs to decide whether to write the directions
     LaunchParams_HemiVis launchParams{};
 };
 
