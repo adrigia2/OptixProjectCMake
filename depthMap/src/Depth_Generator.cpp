@@ -384,7 +384,7 @@ void Depth_Generator::needRenderDepth(bool isNeeded)
 	launchParams.flags.computeDepth = isNeeded;
 }
 
-void Depth_Generator::meedRenderPosition(bool isNeeded)
+void Depth_Generator::needRenderPosition(bool isNeeded)
 {
 	launchParams.flags.computePositional = isNeeded;
 }

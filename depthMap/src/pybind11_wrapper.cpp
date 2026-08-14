@@ -194,7 +194,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("set_traversable", &Depth_Generator::setTraversable, py::arg("model"))
 		.def("set_camera", &Depth_Generator::setCamera, py::arg("camera"))
 		.def("need_render_depth", &Depth_Generator::needRenderDepth, py::arg("isNeeded"))
-		.def("need_render_position", &Depth_Generator::meedRenderPosition, py::arg("isNeeded"))
+		.def("need_render_position", &Depth_Generator::needRenderPosition, py::arg("isNeeded"))
 		.def("need_render_normal", &Depth_Generator::needRenderNormal, py::arg("isNeeded"))
 		.def("render", &Depth_Generator::render)
 		.def("get_result", [](Depth_Generator& self) -> Depth_Generator::Result {

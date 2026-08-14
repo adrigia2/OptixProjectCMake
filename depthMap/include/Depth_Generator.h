@@ -38,7 +38,7 @@ public:
 	void render();
 
 	void needRenderDepth(bool isNeeded);
-	void meedRenderPosition(bool isNeeded);
+	void needRenderPosition(bool isNeeded);
 	void needRenderNormal(bool isNeeded);
 	void setTraversable(const TriangleMesh& model) override;
 	void cleanup() override;
