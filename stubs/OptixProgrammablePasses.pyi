@@ -7,32 +7,47 @@ import enum
 import numpy
 import numpy.typing
 import typing
-__all__: list[str] = ['Camera', 'ColorTexGenerator', 'ColorTexResult', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'Frame', 'IUMGenerator', 'IUMResult', 'LogLevel', 'LogManager', 'OptixManager', 'TriangleMesh', 'Verbose', 'Warning', 'vec2i', 'vec3f']
+__all__: list[str] = ['Camera', 'ColorTexGenerator', 'ColorTexResult', 'DepthGenerator', 'DepthResult', 'Disabled', 'Error', 'Fatal', 'Frame', 'HemiVisGenerator', 'HemiVisTileResult', 'IUMGenerator', 'IUMResult', 'IndirectGenerator', 'IndirectTileResult', 'IrradianceGenerator', 'IrradianceResult', 'LogLevel', 'LogManager', 'OptixManager', 'SpecConeGenerator', 'SpecConeTileResult', 'TriangleMesh', 'Verbose', 'VisibilityGenerator', 'Warning', 'vec2i', 'vec3f']
+class Camera:
+    forward: vec3f
+    frame_size: vec2i
+    pos: vec3f
+    up: vec3f
+    def __init__(self, pos: vec3f, forward: vec3f, up: vec3f, fovY: typing.SupportsFloat | typing.SupportsIndex = 45.0, frameSize: ... = ...) -> None:
+        ...
+    def __repr__(self) -> str:
+        ...
+    @property
+    def fovY(self) -> float:
+        ...
+    @fovY.setter
+    def fovY(self, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
 class ColorTexGenerator:
     def __init__(self) -> None:
+        ...
+    def download_camera_colors(self, cam: typing.SupportsInt | typing.SupportsIndex) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    def download_camera_mask(self, cam: typing.SupportsInt | typing.SupportsIndex) -> numpy.typing.NDArray[numpy.uint8]:
         ...
     def get_result(self) -> ColorTexResult:
         ...
     def render(self) -> None:
         ...
-    def set_inputs(self, ium_result: IUMResult, visibility: numpy.typing.NDArray[numpy.uint8], frames: list) -> None:
+    def set_inputs(self, ium_result: IUMResult, visibility: typing.Annotated[numpy.typing.ArrayLike, numpy.uint8], frames: list, grazing_max_deg: typing.SupportsFloat | typing.SupportsIndex = 90.0) -> None:
         ...
 class ColorTexResult:
     @property
+    def color_max_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def color_min_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def color_variance_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
     def colors_np(self) -> numpy.typing.NDArray[numpy.float32]:
-        ...
-class Camera:
-    forward: vec3f
-    pos: vec3f
-    up: vec3f
-    def __init__(self, pos: vec3f, forward: vec3f, up: vec3f) -> None:
-        ...
-    def __repr__(self) -> str:
-        ...
-class Frame:
-    camera: Camera
-    peak: float
-    def __init__(self, camera: Camera, peak: float, image: numpy.typing.NDArray[numpy.float32]) -> None:
         ...
 class DepthGenerator:
     def __init__(self) -> None:
@@ -47,7 +62,7 @@ class DepthGenerator:
         ...
     def render(self) -> None:
         ...
-    def set_camera(self, camera: Camera, fovY: typing.SupportsFloat | typing.SupportsIndex, frameSize: vec2i) -> None:
+    def set_camera(self, camera: Camera) -> None:
         ...
     def set_traversable(self, model: TriangleMesh) -> None:
         ...
@@ -72,6 +87,75 @@ class DepthResult:
     @property
     def positions_np(self) -> numpy.typing.NDArray[numpy.float32]:
         ...
+class Frame:
+    camera: Camera
+    def __init__(self, camera: Camera, peak: typing.SupportsFloat | typing.SupportsIndex, image: typing.Annotated[numpy.typing.ArrayLike, numpy.float32]) -> None:
+        ...
+    @property
+    def peak(self) -> float:
+        ...
+    @peak.setter
+    def peak(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+class HemiVisGenerator:
+    def __init__(self) -> None:
+        ...
+    def num_cameras(self) -> int:
+        ...
+    def num_pixels(self) -> int:
+        ...
+    def num_samples(self) -> int:
+        ...
+    def num_tiles(self) -> int:
+        ...
+    def render_tile(self, tile_idx: typing.SupportsInt | typing.SupportsIndex) -> HemiVisTileResult:
+        ...
+    def set_cameras(self, cam_positions: collections.abc.Sequence[vec3f]) -> None:
+        """
+        World positions of the cameras for the mirror rays (empty list = none).
+        """
+    def set_debug_directions(self, enabled: bool) -> None:
+        """
+        Also return the traced directions (dirs_np / dirs_mirror_np). Needed by the kernel<->torch parity test; costs 12 B/ray.
+        """
+    def set_inputs(self, ium_result: IUMResult, num_samples: typing.SupportsInt | typing.SupportsIndex, tile_size: typing.SupportsInt | typing.SupportsIndex = 1024) -> None:
+        """
+        num_samples = shared Fibonacci samples per texel (S). The directions are deterministic and have to be rebuilt on the Python side with the same formula as the kernel (see deviceProgramsHemiVis.cu).
+        """
+    def set_traversable(self, model: TriangleMesh) -> None:
+        ...
+    def tile_size(self) -> int:
+        ...
+class HemiVisTileResult:
+    @property
+    def dirs_mirror_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Mirror directions traced (only with set_debug_directions(True)).
+        """
+    @property
+    def dirs_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Shared directions traced (only with set_debug_directions(True)).
+        """
+    @property
+    def num_cams(self) -> int:
+        ...
+    @property
+    def num_samples(self) -> int:
+        ...
+    @property
+    def t_hit_mirror_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        t_hit of the mirror rays, shape (tile_texels, num_cams).
+        """
+    @property
+    def t_hit_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        t_hit of the shared rays, shape (tile_texels, num_samples): >0 hit, 0 miss, <0 ray not launched.
+        """
+    @property
+    def tile_texels(self) -> int:
+        ...
 class IUMGenerator:
     def __init__(self) -> None:
         ...
@@ -86,27 +170,76 @@ class IUMGenerator:
 class IUMResult:
     def has_masks(self) -> bool:
         ...
+    def has_normals(self) -> bool:
+        ...
     def has_positions(self) -> bool:
         ...
     @property
     def masks_np(self) -> numpy.typing.NDArray[numpy.uint8]:
         ...
     @property
+    def normals_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
     def positions_np(self) -> numpy.typing.NDArray[numpy.float32]:
         ...
+class IndirectGenerator:
+    def __init__(self) -> None:
+        ...
+    def num_pixels(self) -> int:
+        ...
+    def num_tiles(self) -> int:
+        ...
+    def render_tile(self, tile_idx: typing.SupportsInt | typing.SupportsIndex) -> IndirectTileResult:
+        ...
+    def set_inputs(self, ium_result: IUMResult, sample_side: typing.SupportsInt | typing.SupportsIndex, tile_size: typing.SupportsInt | typing.SupportsIndex = 1024) -> None:
+        ...
+    def set_traversable(self, model: TriangleMesh) -> None:
+        ...
+    def tile_size(self) -> int:
+        ...
+class IndirectTileResult:
+    @property
+    def cos_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def count(self) -> int:
+        ...
+    @property
+    def directions_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def local_idx_np(self) -> numpy.typing.NDArray[numpy.int32]:
+        ...
+    @property
+    def t_hit_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+class IrradianceGenerator:
+    def __init__(self) -> None:
+        ...
+    def get_result(self) -> IrradianceResult:
+        ...
+    def render(self) -> None:
+        ...
+    def set_inputs(self, ium_result: IUMResult, skybox: typing.Annotated[numpy.typing.ArrayLike, numpy.float32], skybox_size: vec2i, sample_side: typing.SupportsInt | typing.SupportsIndex, skybox_yaw_degrees: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
+        ...
+    def set_traversable(self, model: TriangleMesh) -> None:
+        ...
+class IrradianceResult:
+    def has_irradiance(self) -> bool:
+        ...
+    @property
+    def irradiance_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
 class LogLevel(enum.IntEnum):
+    """
+    An enumeration.
+    """
     Disabled: typing.ClassVar[LogLevel]  # value = <LogLevel.Disabled: 0>
     Error: typing.ClassVar[LogLevel]  # value = <LogLevel.Error: 2>
     Fatal: typing.ClassVar[LogLevel]  # value = <LogLevel.Fatal: 1>
     Verbose: typing.ClassVar[LogLevel]  # value = <LogLevel.Verbose: 4>
     Warning: typing.ClassVar[LogLevel]  # value = <LogLevel.Warning: 3>
-    @classmethod
-    def __new__(cls, value):
-        ...
-    def __format__(self, format_spec):
-        """
-        Convert to a string according to format_spec.
-        """
 class LogManager:
     @staticmethod
     def enable_console(enabled: bool) -> None:
@@ -140,10 +273,74 @@ class OptixManager:
         """
         Set the log level for both OptiX callbacks and LogManager filter.
         """
+class SpecConeGenerator:
+    def __init__(self) -> None:
+        ...
+    def num_levels(self) -> int:
+        ...
+    def num_pixels(self) -> int:
+        ...
+    def num_tiles(self) -> int:
+        ...
+    def render_tile(self, tile_idx: typing.SupportsInt | typing.SupportsIndex) -> SpecConeTileResult:
+        ...
+    def set_camera(self, cam_pos: vec3f, visibility: typing.Annotated[numpy.typing.ArrayLike, numpy.uint8]) -> None:
+        ...
+    def set_envmap(self, skybox: typing.Annotated[numpy.typing.ArrayLike, numpy.float32], skybox_size: vec2i, skybox_yaw_degrees: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
+        ...
+    def set_inputs(self, ium_result: IUMResult, cone_apertures_deg: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], samples_per_ring: typing.Any, tile_size: typing.SupportsInt | typing.SupportsIndex = 1024) -> None:
+        """
+        samples_per_ring: int (same count on every ring) or list[int] of length len(cone_apertures_deg)-1 (rings 1..K-1; level 0 = mirror ray is always a single sample).
+        """
+    def set_traversable(self, model: TriangleMesh) -> None:
+        ...
+    def tile_size(self) -> int:
+        ...
+class SpecConeTileResult:
+    @property
+    def count(self) -> int:
+        ...
+    @property
+    def directions_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def local_idx_np(self) -> numpy.typing.NDArray[numpy.int32]:
+        ...
+    @property
+    def num_levels(self) -> int:
+        ...
+    @property
+    def overflow(self) -> bool:
+        ...
+    @property
+    def requested(self) -> int:
+        ...
+    @property
+    def ring_idx_np(self) -> numpy.typing.NDArray[numpy.int32]:
+        ...
+    @property
+    def sky_sum_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def t_hit_np(self) -> numpy.typing.NDArray[numpy.float32]:
+        ...
+    @property
+    def tile_texels(self) -> int:
+        ...
+    @property
+    def valid_count_np(self) -> numpy.typing.NDArray[numpy.int32]:
+        ...
 class TriangleMesh:
     def __init__(self) -> None:
         ...
     def add_from_obj_file(self, filename: str) -> None:
+        ...
+class VisibilityGenerator:
+    def __init__(self) -> None:
+        ...
+    def check_visibility(self, ium_result: IUMResult, width: typing.SupportsInt | typing.SupportsIndex, height: typing.SupportsInt | typing.SupportsIndex, cameras: list) -> numpy.typing.NDArray[numpy.uint8]:
+        ...
+    def set_traversable(self, model: TriangleMesh) -> None:
         ...
 class vec2i:
     @typing.overload
@@ -177,6 +374,13 @@ class vec3f:
         ...
     @typing.overload
     def __init__(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex, arg2: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: collections.abc.Sequence) -> None:
+        ...
+    def __iter__(self) -> collections.abc.Iterator:
+        ...
+    def __repr__(self) -> str:
         ...
     @property
     def x(self) -> float:

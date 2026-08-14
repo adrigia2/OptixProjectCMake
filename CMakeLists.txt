@@ -8,16 +8,24 @@ project(OptixProjectCMake)
 #   3. the SDK's default Windows install path
 # Keeping the fallback here rather than in pyproject.toml is what makes
 # `pip install .` work on a machine where the SDK lives somewhere else.
-if(NOT OptiX_INSTALL_DIR)
-  if(DEFINED ENV{OPTIX_INSTALL_DIR})
-    set(OptiX_INSTALL_DIR "$ENV{OPTIX_INSTALL_DIR}")
-  else()
-    set(OptiX_INSTALL_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0")
-  endif()
+#
+# It has to end up as a CACHE entry, not a plain variable: FindOptiX.cmake opens
+# with its own `set(OptiX_INSTALL_DIR ... CACHE PATH ...)` defaulting to
+# ${CMAKE_SOURCE_DIR}/.., and creating a cache entry that did not exist before
+# discards the normal variable of the same name. A plain set() here would
+# therefore be silently thrown away, and the SDK headers would not be found.
+if(DEFINED ENV{OPTIX_INSTALL_DIR})
+  set(_optix_default "$ENV{OPTIX_INSTALL_DIR}")
+else()
+  set(_optix_default "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0")
 endif()
 
-# Normalise the path: the default install directory contains a space.
-file(TO_CMAKE_PATH "${OptiX_INSTALL_DIR}" OptiX_INSTALL_DIR)
+# Normalise the path: the default install directory contains a space, and an
+# environment variable may well arrive with backslashes.
+file(TO_CMAKE_PATH "${_optix_default}" _optix_default)
+
+# No FORCE: an explicit -DOptiX_INSTALL_DIR wins.
+set(OptiX_INSTALL_DIR "${_optix_default}" CACHE PATH "Path to the OptiX SDK")
 
 if(NOT EXISTS "${OptiX_INSTALL_DIR}")
   message(FATAL_ERROR
