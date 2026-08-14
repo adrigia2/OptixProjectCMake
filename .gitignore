@@ -1051,3 +1051,15 @@ dkms.conf
 
 !common/**
 Scenes/**
+
+# ── Handoff cleanup ───────────────────────────────────────────────────────────
+# Python packaging output (built on demand with `pip install -e .`; the wheels
+# that used to be committed here were cp312 and unusable from a 3.10 env).
+wheelhouse/
+dist/
+
+# JetBrains project metadata
+.idea/
+
+# Stray render dumps left at the repo root
+*.bmp
