@@ -109,7 +109,7 @@ namespace
     }
 } // namespace
 
-// ---- API pubblica extra ----
+// ---- Extra public API ----
 
 void LogManager::SetLogFile(const std::string& path, bool append)
 {

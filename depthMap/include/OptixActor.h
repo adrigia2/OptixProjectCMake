@@ -45,5 +45,5 @@ protected:
 	// as output buffer
 	CUDABuffer asBuffer;
 
-	CUDABuffer launchParamsBuffer; // Buffer per i parametri di lancio
+	CUDABuffer launchParamsBuffer; // buffer holding the launch parameters
 };

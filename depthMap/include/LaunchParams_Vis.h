@@ -24,9 +24,9 @@ namespace osc {
             uint8_t* visibility_results; 
         } results;
 
-        // Dati ricevuti da IUM
+        // Data coming from IUM
         struct {
-            vec3f* ium_positions;  // Posizioni 3D per ciascun pixel
+            vec3f* ium_positions;  // 3D position of each texel
             uint8_t* ium_masks;    // 1 = valid texel, 0 = background/invalid
             int num_pixels;        // total pixels (width * height of the texture)
         } ium_data;

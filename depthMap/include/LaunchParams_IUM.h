@@ -36,7 +36,7 @@ namespace osc {
 			vec3f* worldVertices;  // the vertices' real 3D positions
 			vec2f* uvVertices;     // the vertices' UV coordinates
 			vec3i* indices;        // triangle indices
-			uint32_t numTriangles; // Numero di triangoli
+			uint32_t numTriangles; // triangle count
 		} data;
 
 		OptixTraversableHandle traversable;

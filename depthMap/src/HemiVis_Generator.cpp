@@ -169,9 +169,9 @@ void HemiVis_Generator::setInputs(const IUM_Generator::Result& ium_result,
     iumMasksBuffer.resize(numPix * sizeof(uint8_t));
     iumMasksBuffer.upload(ium_result.masks.data(), numPix);
 
-    // Il conto va fatto in size_t: tile grandi e S alto sforano INT_MAX in fretta
+    // The count has to be done in size_t: large tiles with a high S overflow INT_MAX fast
     // (at S=16384, 131k texels per tile are enough), and a negative size
-    // azzererebbe silenziosamente il buffer.
+    // would silently zero the buffer.
     const size_t sharedRays = (size_t)tileSz * (size_t)numSmp;
     if (sharedRays > (size_t)std::numeric_limits<int>::max())
         throw std::runtime_error(

@@ -103,7 +103,7 @@ void TriangleMesh::addUnitCube(const affine3f& xfm)
     vertex.push_back(xfmPoint(xfm, vec3f(1.f, 1.f, 1.f)));
 
     // Add a texture coordinate for each vertex
-    // Mapping UV semplice basato sulle coordinate x,y,z normalizzate
+    // Simple UV mapping, from the normalised x, y, z coordinates
     texcoord.push_back(vec2f(0.f, 0.f)); // vertex 0
     texcoord.push_back(vec2f(1.f, 0.f)); // vertex 1
     texcoord.push_back(vec2f(0.f, 1.f)); // vertex 2

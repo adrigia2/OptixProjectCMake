@@ -15,7 +15,7 @@ public:
     static void LogWarning(const char* format, ...);
     static void LogFatal(const char* format, ...);
 
-    // Extra utili (opzionali ma consigliati)
+    // Useful extras (optional, but recommended)
     static void SetLogFile(const std::string& path, bool append = true);
     static void EnableConsole(bool enabled);
     static void EnableFile(bool enabled);

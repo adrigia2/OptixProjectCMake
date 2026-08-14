@@ -211,7 +211,7 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
     for (size_t i = 0; i < coneAperturesDeg.size(); ++i)
         ringCos[i] = std::cos(0.5f * coneAperturesDeg[i] * DEG2RAD);
 
-    // Upload input permanenti
+    // Upload the persistent inputs
     iumPositionsBuffer.resize(numPix * sizeof(vec3f));
     iumPositionsBuffer.upload(ium_result.positions.data(), numPix);
 

@@ -18,7 +18,7 @@ protected:
     void initOptix();
     void createContext();
 
-    // costruttore privato/protetto: impedisce creazione esterna
+    // Protected constructor: prevents construction from outside
     OptixManager() {
 
         initOptix();

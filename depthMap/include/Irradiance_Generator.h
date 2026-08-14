@@ -39,7 +39,7 @@ public:
     // sampleSide = N -> N*N samples are used per texel.
     // skyboxYawDegrees = rotation around the vertical Z axis (up in Blender space).
     //   Default 0 degrees: -Y (Blender's camera forward) at the centre of the envmap.
-    //   Regolarlo se la HDRI ha un'orientazione diversa.
+    //   Adjust it when the HDRI is oriented differently.
     void setInputs(const IUM_Generator::Result& ium_result,
                    const std::vector<vec3f>& skybox,
                    vec2i skyboxSize,
@@ -53,7 +53,7 @@ public:
 protected:
     OptixTraversableHandle createGAS(const TriangleMesh& model) override;
 
-    // GAS world-space (riusa pattern di Visibility_Generator)
+    // World-space GAS (reuses the Visibility_Generator pattern)
     CUDABuffer vertexBuffer;
     CUDABuffer indexBuffer;
     CUDABuffer asBuffer;

@@ -19,7 +19,7 @@
 
 namespace py = pybind11;
 
-// Classe wrapper per gestire il flusso completo di lavoro
+// Wrapper class driving the whole workflow
 class OptiXPipeline {
 
 };

@@ -203,7 +203,7 @@ void Irradiance_Generator::setInputs(const IUM_Generator::Result& ium_result,
     }
     cudaMemset((void*)irradianceBuffer.d_pointer(), 0, outBytes);
 
-    // Riempi launch params
+    // Fill the launch params
     launchParams.results.irradiance      = (vec3f*)irradianceBuffer.d_pointer();
 
     launchParams.ium_data.ium_positions  = (vec3f*)iumPositionsBuffer.d_pointer();
@@ -217,7 +217,7 @@ void Irradiance_Generator::setInputs(const IUM_Generator::Result& ium_result,
     constexpr float PI_F = 3.14159265358979323846f;
     const float yaw_rad = skyboxYawDegrees * (PI_F / 180.0f);
     float yaw_offset_u = yaw_rad / (2.0f * PI_F);
-    yaw_offset_u -= floorf(yaw_offset_u);  // normalizza in [0, 1)
+    yaw_offset_u -= floorf(yaw_offset_u);  // normalise into [0, 1)
     launchParams.skybox.yaw_offset_u     = yaw_offset_u;
 
     launchParams.sample_side             = sampleSide;

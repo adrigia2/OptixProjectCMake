@@ -210,7 +210,7 @@ OptixTraversableHandle IUM_Generator::createGAS(const TriangleMesh& model)
 	uint32_t triangleInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 	triangleInput.triangleArray.flags = triangleInputFlags;
 
-	// tipico: 1 SBT record per tutta la mesh
+	// typical case: one SBT record for the whole mesh
 	triangleInput.triangleArray.numSbtRecords = 1;
 	triangleInput.triangleArray.sbtIndexOffsetBuffer = 0;
 	triangleInput.triangleArray.sbtIndexOffsetSizeInBytes = 0;

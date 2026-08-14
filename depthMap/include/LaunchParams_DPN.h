@@ -12,7 +12,7 @@ struct LaunchParams_DPN
 		bool computePositional = false; // when true, the raygen program computes the 3D positions
 		bool computeNormal = false;     // when true, the raygen program computes the 3D normals
 	} flags;
-	vec2i size; // dimensione del frame da creare (width, height)
+	vec2i size; // size of the frame to render (width, height)
 	struct {
 		float* depthBuffer;
 		vec3f* positionalBuffer;

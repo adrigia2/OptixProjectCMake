@@ -31,7 +31,7 @@ public:
     void cleanup() override;
 
     // Run the visibility test and return an array of shape (num_pixels * num_cameras)
-    // di bool (espressi come uint8_t 1 o 0).
+    // of bools, expressed as uint8_t 1 or 0.
     std::vector<uint8_t> checkVisibility(const IUM_Generator::Result& ium_result, int width, int height, const std::vector<Camera>& cameras);
 
 protected:

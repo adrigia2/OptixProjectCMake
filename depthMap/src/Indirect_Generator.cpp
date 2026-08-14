@@ -177,7 +177,7 @@ void Indirect_Generator::setInputs(const IUM_Generator::Result& ium_result,
     tileRaysLocalIdxBuffer.resize(tileCapacity * sizeof(int));
     tileCounterBuffer.alloc(sizeof(unsigned int));
 
-    // Fill launch params (campi fissi)
+    // Fill launch params (the fields that do not change per tile)
     launchParams.ium_data.ium_positions = (vec3f*)iumPositionsBuffer.d_pointer();
     launchParams.ium_data.ium_normals   = (vec3f*)iumNormalsBuffer.d_pointer();
     launchParams.ium_data.ium_masks     = (uint8_t*)iumMasksBuffer.d_pointer();
@@ -235,7 +235,7 @@ Indirect_Generator::TileResult Indirect_Generator::renderTile(int tileIdx) {
     unsigned int count = 0;
     tileCounterBuffer.download(&count, 1);
 
-    // Clamp per sicurezza
+    // Clamp, defensively
     const int clampedCount = std::min((int)count, tileCapacity);
 
     TileResult res;
