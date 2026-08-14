@@ -54,17 +54,18 @@ which creates `tesi-nerf`.
 
 ```bash
 cmake --preset x64-release
-cmake --build out/build/x64-release
+cmake --build out/build/x64-release --config Release
 ```
 
-`x64-debug` is the other preset. Note that the Visual Studio generator is multi-config, so
-`CMAKE_BUILD_TYPE` from the preset does not pick the configuration on its own: the binary
-lands in `out/build/x64-release/Debug/` unless you add `--config Release`.
+`x64-debug` is the other preset. **Pass `--config` explicitly**: the Visual Studio generator is
+multi-config, so `CMAKE_BUILD_TYPE` from the preset does not select the configuration on its
+own, and without it the binaries land in `out/build/x64-release/Debug/` whatever the preset
+says.
 
 Then, as a smoke test:
 
 ```bash
-out/build/x64-release/Debug/depthMap.exe Scenes/SwordShield/Models/SwordShield.obj 512
+out/build/x64-release/Release/depthMap.exe Scenes/SwordShield/Models/SwordShield.obj 512
 ```
 
 It loads the mesh, runs the IUM and depth passes, and prints UV coverage, hit rate and depth
