@@ -18,9 +18,9 @@ namespace osc {
     struct LaunchParams_Vis
     {
         struct {
-            // Buffer in cui scriveremo l'output (size = num_pixels * num_cameras)
-            // 1 = visibile (nessuna occlusione tra camera e punto)
-            // 0 = occluso o invalid
+            // Output buffer (size = num_pixels * num_cameras)
+            // 1 = visible (nothing occludes the camera-to-point segment)
+            // 0 = occluded, or invalid
             uint8_t* visibility_results; 
         } results;
 
@@ -31,7 +31,7 @@ namespace osc {
             int num_pixels;        // total pixels (width * height of the texture)
         } ium_data;
 
-        // Dati delle videocamere
+        // Camera data
         struct {
             CameraDef* cameras;
             int num_cameras;

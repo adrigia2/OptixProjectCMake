@@ -26,17 +26,17 @@ protected:
     }
 
 public:
-    // accesso globale all'istanza
+    // Global access to the instance
     static OptixManager& instance() {
-        static OptixManager inst;   // creato una sola volta, thread-safe (C++11+)
+        static OptixManager inst;   // constructed once, thread-safe (C++11 and later)
         return inst;
     }
 
-    // vieta copia e assegnazione
+    // No copying or assignment
     OptixManager(const OptixManager&) = delete;
     OptixManager& operator=(const OptixManager&) = delete;
 
-    // opzionale: vieta anche i move
+    // Nor moving
     OptixManager(OptixManager&&) = delete;
     OptixManager& operator=(OptixManager&&) = delete;
 
