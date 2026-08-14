@@ -201,9 +201,14 @@ by position, so a divergence between the kernel formula and the torch one has no
 than a silently wrong result. `NeRF_Pytorch/scripts/test_hemivis_shared.py` exists to catch
 exactly that; run it after touching that kernel.
 
-**Exit codes from Python are unreliable.** A process that has used OptiX exits non-zero at
-interpreter shutdown regardless of outcome. Judge the Python smoke tests by their final `✓`
-line. The `depthMap` binary is not affected and returns a meaningful code.
+**Teardown used to corrupt the exit code.** `OptixManager` is a function-local static, so its
+destructor runs at process exit, when the CUDA runtime has already been unloaded; destroying
+the OptiX context then failed, and `OPTIX_CHECK` responds to a failure with `exit(2)` — called
+from inside `exit()`, which is undefined behaviour and fail-fasts with `0xC0000409`. Every
+OptiX process therefore ended in a wall of CUDA error 4 messages and an abnormal exit code,
+even when the work had completed. `OptixManager::cleanup()` now skips the destruction when
+CUDA has gone and never calls `exit()`, so exit codes are meaningful. Bear it in mind when
+reading logs from before 2026-08-14.
 
 ---
 
