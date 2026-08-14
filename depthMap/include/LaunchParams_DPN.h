@@ -8,16 +8,16 @@ using namespace gdt;
 struct LaunchParams_DPN
 {
 	struct {
-		bool computeDepth = false; // Se true, la raygen program calcolerà la depth map
-		bool computePositional = false; // Se true, la raygen program calcolerà le posizioni 3D
-		bool computeNormal = false; // Se true, la raygen program calcolerà le normali 3D
+		bool computeDepth = false;      // when true, the raygen program computes the depth map
+		bool computePositional = false; // when true, the raygen program computes the 3D positions
+		bool computeNormal = false;     // when true, the raygen program computes the 3D normals
 	} flags;
 	vec2i size; // dimensione del frame da creare (width, height)
 	struct {
 		float* depthBuffer;
 		vec3f* positionalBuffer;
 		vec3f* normalBuffer;
-		uint8_t* maskBuffer; // Aggiunto buffer per maschere di validità
+		uint8_t* maskBuffer; // per-pixel validity mask
 	} results;
 	struct {
 		vec3f position;

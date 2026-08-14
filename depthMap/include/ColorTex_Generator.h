@@ -46,14 +46,14 @@ public:
 
     void render();
 
-    // Per-camera colors are not mirrored on the host (num_pixels × num_cameras
+    // Per-camera colors are not mirrored on the host (num_pixels x num_cameras
     // would not scale); the GPU buffer is camera-major, so each camera slice is
     // contiguous and downloaded on demand. Valid after render(), until cleanup().
     void downloadCameraColors(int cam, vec3f* dst) const;
 
-    // Maschera per-camera (uint8, 1 = la camera contribuisce), stessa disposizione
-    // camera-major dei colori. Scritta pre-peak → source-indipendente, riusabile
-    // come visibility condivisa. Valida dopo render(), fino a cleanup().
+    // Per-camera mask (uint8, 1 = the camera contributes), in the same camera-major
+    // layout as the colours. Written before the peak filter, hence source-independent
+    // and reusable as shared visibility. Valid after render(), until cleanup().
     void downloadCameraMask(int cam, uint8_t* dst) const;
 
     int numPixels()  const { return launchParams.num_pixels; }

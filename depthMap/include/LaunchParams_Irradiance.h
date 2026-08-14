@@ -9,28 +9,28 @@ namespace osc {
     struct LaunchParams_Irradiance
     {
         struct {
-            // Buffer di output [num_pixels] — irradiance HDR per texel
+            // Output buffer [num_pixels] -- HDR irradiance per texel
             vec3f* irradiance;
         } results;
 
-        // Dati ricevuti da IUM (esteso con normali)
+        // Data coming from IUM (extended with the normals)
         struct {
-            vec3f*   ium_positions; // posizioni 3D world per texel
-            vec3f*   ium_normals;   // normali di faccia per texel
-            uint8_t* ium_masks;     // 1 = texel valido
-            int      num_pixels;    // width * height della texture
+            vec3f*   ium_positions; // world 3D position per texel
+            vec3f*   ium_normals;   // face normal per texel
+            uint8_t* ium_masks;     // 1 = valid texel
+            int      num_pixels;    // width * height of the texture
         } ium_data;
 
-        // Skybox HDR equirettangolare
+        // Equirectangular HDR skybox
         struct {
             vec3f* envmap;       // [skybox_size.x * skybox_size.y] RGB float
             vec2i  skybox_size;
-            float  yaw_offset_u; // = yaw_radians / (2π) — shift su asse U per rotazione yaw
+            float  yaw_offset_u; // = yaw_radians / (2*pi) -- U-axis shift for the yaw
         } skybox;
 
-        int   sample_side;       // N → N×N direzioni per texel, spirale di Fibonacci
-                                 // deterministica (non è un campionamento casuale)
-        float epsilon;           // offset self-intersection lungo la normale
+        int   sample_side;       // N -> N*N directions per texel, on a deterministic
+                                 // Fibonacci spiral (this is not random sampling)
+        float epsilon;           // self-intersection offset along the normal
 
         OptixTraversableHandle traversable;
     };

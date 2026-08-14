@@ -143,7 +143,7 @@ void LogManager::SetMinLevel(Level level)
     g_minLevel = level;
 }
 
-// ---- Funzioni come nel tuo header ----
+// ---- Public API, as declared in the header ----
 
 void LogManager::Log(const char* format, ...)
 {

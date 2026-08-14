@@ -92,7 +92,7 @@ void TriangleMesh::addUnitCube(const affine3f& xfm)
 {
     int firstVertexID = (int)vertex.size();
 
-    // Aggiungi i vertici del cubo
+    // Add the cube's vertices
     vertex.push_back(xfmPoint(xfm, vec3f(0.f, 0.f, 0.f)));
     vertex.push_back(xfmPoint(xfm, vec3f(1.f, 0.f, 0.f)));
     vertex.push_back(xfmPoint(xfm, vec3f(0.f, 1.f, 0.f)));
@@ -102,18 +102,18 @@ void TriangleMesh::addUnitCube(const affine3f& xfm)
     vertex.push_back(xfmPoint(xfm, vec3f(0.f, 1.f, 1.f)));
     vertex.push_back(xfmPoint(xfm, vec3f(1.f, 1.f, 1.f)));
 
-    // Aggiungi le coordinate texture per ogni vertice
+    // Add a texture coordinate for each vertex
     // Mapping UV semplice basato sulle coordinate x,y,z normalizzate
-    texcoord.push_back(vec2f(0.f, 0.f)); // vertice 0
-    texcoord.push_back(vec2f(1.f, 0.f)); // vertice 1
-    texcoord.push_back(vec2f(0.f, 1.f)); // vertice 2
-    texcoord.push_back(vec2f(1.f, 1.f)); // vertice 3
-    texcoord.push_back(vec2f(0.f, 0.f)); // vertice 4
-    texcoord.push_back(vec2f(1.f, 0.f)); // vertice 5
-    texcoord.push_back(vec2f(0.f, 1.f)); // vertice 6
-    texcoord.push_back(vec2f(1.f, 1.f)); // vertice 7
+    texcoord.push_back(vec2f(0.f, 0.f)); // vertex 0
+    texcoord.push_back(vec2f(1.f, 0.f)); // vertex 1
+    texcoord.push_back(vec2f(0.f, 1.f)); // vertex 2
+    texcoord.push_back(vec2f(1.f, 1.f)); // vertex 3
+    texcoord.push_back(vec2f(0.f, 0.f)); // vertex 4
+    texcoord.push_back(vec2f(1.f, 0.f)); // vertex 5
+    texcoord.push_back(vec2f(0.f, 1.f)); // vertex 6
+    texcoord.push_back(vec2f(1.f, 1.f)); // vertex 7
 
-    // Definisci gli indici per i triangoli (12 triangoli, 2 per faccia)
+    // Triangle indices (12 triangles, 2 per face)
     int indices[] = { 0,1,3, 2,0,3,
                      5,7,6, 5,6,4,
                      0,4,5, 0,5,1,

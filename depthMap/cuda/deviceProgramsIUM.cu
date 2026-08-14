@@ -9,7 +9,7 @@ using namespace osc;
 		optixLaunch) */
 	extern "C" __constant__ LaunchParams_IUM optixLaunchParams;
 
-	// for this simple example, we have a single ray type
+	// a single ray type is enough for this pass
 	enum { SURFACE_RAY_TYPE = 0, RAY_TYPE_COUNT };
 
 	static __forceinline__ __device__
@@ -45,7 +45,7 @@ using namespace osc;
 
 	//------------------------------------------------------------------------------
 	// IUM (Inverse UV Mapping) Ray Generation Program
-	// Ogni pixel (ix, iy) rappresenta una coordinata UV nella texture
+	// Every pixel (ix, iy) stands for a UV coordinate in the texture
 	//------------------------------------------------------------------------------
 	extern "C" __global__ void __raygen__renderIUM()
 	{
@@ -54,16 +54,16 @@ using namespace osc;
 
 		const auto size = optixLaunchParams.size;
 
-		// Converti coordinate pixel in coordinate UV normalizzate [0,1].
-		// L'asse V è invertito rispetto all'indice riga (iy=0 = riga in alto
-		// dell'immagine = V=1) in modo che l'origine UV (0,0) sia in basso a
-		// sinistra — convenzione Blender/OBJ/OpenGL.
+		// Convert pixel coordinates into normalised UV coordinates in [0,1].
+		// The V axis is flipped with respect to the row index (iy=0 = top row of the
+		// image = V=1) so that the UV origin (0,0) sits bottom left, which is the
+		// Blender/OBJ/OpenGL convention.
 		const vec2f pixelUV(
 			(float(ix) + 0.5f) / float(size.x),
 			1.0f - (float(iy) + 0.5f) / float(size.y)
 		);
 
-		// Inizializza il payload
+		// Initialise the payload
 		IUMPayload prd;
 		prd.position = vec3f(0.f);
 		prd.normal = vec3f(0.f);
@@ -72,9 +72,9 @@ using namespace osc;
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
-		// Lancia un ray nella GAS in UV space
-		// La GAS � costruita con vertici (u, v, 0), quindi lanciamo un ray
-		// che parte da (pixelUV.x, pixelUV.y, 1) e va verso -Z
+		// Trace a ray through the GAS built in UV space.
+		// That GAS is built from vertices (u, v, 0), so the ray starts at
+		// (pixelUV.x, pixelUV.y, 1) and travels towards -Z.
 		vec3f rayOrigin = vec3f(pixelUV.x, pixelUV.y, 1.0f);
 		vec3f rayDirection = vec3f(0.f, 0.f, -1.f);
 
@@ -85,13 +85,13 @@ using namespace osc;
 			1e20f,            // tmax
 			0.0f,             // rayTime
 			OptixVisibilityMask(255),
-			OPTIX_RAY_FLAG_NONE,  // Vogliamo il primo hit
+			OPTIX_RAY_FLAG_NONE,  // we want the first hit
 			SURFACE_RAY_TYPE,     // SBT offset
 			RAY_TYPE_COUNT,       // SBT stride
 			SURFACE_RAY_TYPE,     // missSBTIndex 
 			u0, u1);
 
-		// Scrivi risultato nei buffer di output
+		// Write the result into the output buffers
 		const uint32_t index = ix + iy * size.x;
 		optixLaunchParams.results.positions[index] = prd.position;
 		optixLaunchParams.results.normals[index] = prd.normal;
@@ -104,7 +104,7 @@ using namespace osc;
 	extern "C" __global__ void __miss__renderIUM()
 	{
 		IUMPayload& prd = *(IUMPayload*)getPRD<IUMPayload>();
-		// Questo pixel UV non corrisponde a nessun triangolo
+		// This UV pixel maps to no triangle
 		prd.position = vec3f(0.f);
 		prd.normal = vec3f(0.f);
 		prd.mask = 0;
@@ -112,45 +112,45 @@ using namespace osc;
 
 	//------------------------------------------------------------------------------
 	// IUM Closest Hit Program
-	// Qui mappiamo da UV space a World space
+	// This is where UV space is mapped back to world space
 	//------------------------------------------------------------------------------
 	extern "C" __global__ void __closesthit__renderIUM()
 	{
 		const int primID = optixGetPrimitiveIndex();
 		IUMPayload& prd = *(IUMPayload*)getPRD<IUMPayload>();
 
-		// Ottieni coordinate baricentriche dell'hit point IN UV SPACE
+		// Barycentric coordinates of the hit point IN UV SPACE
 		const float2 barycentrics = optixGetTriangleBarycentrics();
 		const float u = barycentrics.x;
 		const float v = barycentrics.y;
 		const float w = 1.0f - u - v;
 
-		// Ottieni gli indici dei vertici del triangolo colpito
+		// Vertex indices of the triangle that was hit
 		const vec3i index = optixLaunchParams.data.indices[primID];
 
-		// Ottieni le posizioni 3D REALI dei tre vertici del triangolo
+		// The REAL 3D positions of the triangle's three vertices
 		const vec3f worldPos0 = optixLaunchParams.data.worldVertices[index.x];
 		const vec3f worldPos1 = optixLaunchParams.data.worldVertices[index.y];
 		const vec3f worldPos2 = optixLaunchParams.data.worldVertices[index.z];
 
-		// Interpola la posizione 3D usando le stesse coordinate baricentriche
-		// che abbiamo ottenuto dal hit in UV space
+		// Interpolate the 3D position with the same barycentric coordinates the hit
+		// in UV space produced
 		const vec3f worldPosition = w * worldPos0 + u * worldPos1 + v * worldPos2;
 
-		// Normale di faccia: cross product dei lati del triangolo in world space.
-		// Outward se il winding OBJ è CCW (standard tinyobj).
+		// Face normal: cross product of the triangle's edges in world space.
+		// Outward-facing when the OBJ winding is CCW (the tinyobj standard).
 		const vec3f e1 = worldPos1 - worldPos0;
 		const vec3f e2 = worldPos2 - worldPos0;
 		const vec3f faceNormal = normalize(cross(e1, e2));
 
-		// Salva il risultato
+		// Store the result
 		prd.position = worldPosition;
 		prd.normal = faceNormal;
-		prd.mask = 1;  // Hit valido!
+		prd.mask = 1;  // valid hit
 	}
 
 	extern "C" __global__ void __anyhit__renderIUM()
 	{
-		// Lascia vuoto per ora - processiamo solo il primo hit
+		// Intentionally empty: only the first hit matters here
 	}
 

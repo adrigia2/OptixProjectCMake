@@ -27,22 +27,22 @@ namespace osc {
   /*! simple wrapper for creating, and managing a device-side CUDA
       buffer */
   struct CUDABuffer {
-    // RAII: default ctor (esplicito perché dichiariamo altri special members)
+    // RAII: default ctor (explicit, because other special members are declared)
     CUDABuffer() = default;
 
-    // Distruttore: libera senza lanciare (cudaFree diretto, non CUDA_CHECK — un dtor
-    // che lancia causa std::terminate; a shutdown del processo il contesto CUDA può
-    // già essere distrutto e cudaFree restituisce un errore ignorabile).
+    // Destructor: frees without throwing (a plain cudaFree, not CUDA_CHECK -- a dtor
+    // that throws calls std::terminate; at process shutdown the CUDA context may
+    // already be gone and cudaFree then returns an error that can be ignored).
     ~CUDABuffer() {
       if (d_ptr) { cudaFree(d_ptr); d_ptr = nullptr; sizeInBytes = 0; }
     }
 
-    // Copia vietata: owner unico → niente double-free da shallow copy.
+    // Copying is forbidden: single owner -> no double free from a shallow copy.
     CUDABuffer(const CUDABuffer&)            = delete;
     CUDABuffer& operator=(const CUDABuffer&) = delete;
 
-    // Move: trasferisce la proprietà e annulla la sorgente.
-    // noexcept è obbligatorio affinché std::vector usi il move invece della copia.
+    // Move: transfers ownership and clears the source.
+    // noexcept is required, or std::vector copies instead of moving.
     CUDABuffer(CUDABuffer&& o) noexcept
         : sizeInBytes(o.sizeInBytes), d_ptr(o.d_ptr)
     { o.d_ptr = nullptr; o.sizeInBytes = 0; }

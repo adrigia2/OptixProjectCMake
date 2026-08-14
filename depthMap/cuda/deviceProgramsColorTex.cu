@@ -9,7 +9,7 @@ namespace colortex {
 extern "C" __constant__ LaunchParams_ColorTex optixLaunchParams;
 
 //------------------------------------------------------------------------------
-// Raygen — no ray tracing: pure projection + color sampling
+// Raygen -- no ray tracing: pure projection + color sampling
 //------------------------------------------------------------------------------
 extern "C" __global__ void __raygen__colorTex()
 {
@@ -43,7 +43,7 @@ extern "C" __global__ void __raygen__colorTex()
 
     for (int k = 0; k < num_cameras; ++k) {
         vec3f   cam_color = vec3f(0.f, 0.f, 0.f);
-        uint8_t cam_valid = 0;   // 1 = la camera contribuisce (pre-peak)
+        uint8_t cam_valid = 0;   // 1 = the camera contributes (before the peak test)
 
         // Skip occluded cameras
         if (optixLaunchParams.visibility[idx * num_cameras + k] != 0) {
@@ -52,10 +52,10 @@ extern "C" __global__ void __raygen__colorTex()
             // Perspective projection
             const vec3f d = pos - cam.position;
 
-            // Grazing-angle cull: se la camera vede il texel troppo di taglio
-            // (n·v < soglia) viene trattata come se non vedesse il punto.
-            // La direzione texel->camera è -d, quindi n·v = -dot(n,d)/|d|.
-            // Per evitare la divisione confrontiamo: -dot(n,d) < grazing_min_cos * |d|
+            // Grazing-angle cull: a camera looking at the texel too obliquely
+            // (n.v < threshold) is treated as not seeing the point at all.
+            // The texel->camera direction is -d, so n.v = -dot(n,d)/|d|.
+            // Comparing -dot(n,d) < grazing_min_cos * |d| avoids the division
             if (optixLaunchParams.grazing_min_cos > -1.f) {
                 const vec3f n = optixLaunchParams.ium_normals[idx];
                 if (-dot(n, d) < optixLaunchParams.grazing_min_cos * length(d)) {
@@ -77,9 +77,9 @@ extern "C" __global__ void __raygen__colorTex()
                     const int py = (int)(uv_y * cam.frame_size.y);
 
                     if (px >= 0 && px < cam.frame_size.x && py >= 0 && py < cam.frame_size.y) {
-                        // Il texel proietta in un pixel valido, non occluso, non di
-                        // taglio: la camera lo "vede" (indipendente dal peak, quindi
-                        // source-indipendente → usabile come visibility condivisa).
+                        // The texel projects onto a pixel that is valid, unoccluded and
+                        // not grazing: the camera "sees" it. Independent of the peak,
+                        // hence source-independent and usable as shared visibility.
                         cam_valid = 1;
 
                         const vec3f color = cam.image_ptr[py * cam.frame_size.x + px];
@@ -131,12 +131,12 @@ extern "C" __global__ void __raygen__colorTex()
 }
 
 //------------------------------------------------------------------------------
-// Stub miss — never called, satisfies SBT requirements
+// Stub miss -- never called, satisfies SBT requirements
 //------------------------------------------------------------------------------
 extern "C" __global__ void __miss__colorTex() {}
 
 //------------------------------------------------------------------------------
-// Stub closest hit — never called, satisfies SBT requirements
+// Stub closest hit -- never called, satisfies SBT requirements
 //------------------------------------------------------------------------------
 extern "C" __global__ void __closesthit__colorTex() {}
 

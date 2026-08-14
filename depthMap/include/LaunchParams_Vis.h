@@ -27,8 +27,8 @@ namespace osc {
         // Dati ricevuti da IUM
         struct {
             vec3f* ium_positions;  // Posizioni 3D per ciascun pixel
-            uint8_t* ium_masks;    // 1 = pixel valido, 0 = background/invalido
-            int num_pixels;        // numero totale di pixel (width * height della texture)
+            uint8_t* ium_masks;    // 1 = valid texel, 0 = background/invalid
+            int num_pixels;        // total pixels (width * height of the texture)
         } ium_data;
 
         // Dati delle videocamere

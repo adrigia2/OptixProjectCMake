@@ -11,7 +11,7 @@ namespace indirect {
 
 extern "C" __constant__ LaunchParams_Indirect optixLaunchParams;
 
-// Frisvad 2012 branchless ONB (identico a deviceProgramsIrradiance.cu)
+// Frisvad 2012 branchless ONB (identical to deviceProgramsIrradiance.cu)
 static __forceinline__ __device__
 void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 {
@@ -23,10 +23,10 @@ void buildONB(const vec3f& n, vec3f& T, vec3f& B)
 }
 
 // ----------------------------------------------------------------------------
-// Raygen — un thread per texel del tile; scrive nel buffer compatto i raggi
-// che colpiscono la geometria (occluded == 1). I raggi verso il cielo
-// (occluded == 0) vengono ignorati: il contributo skybox è già gestito da
-// Irradiance_Generator.
+// Raygen -- one thread per texel of the tile. It writes into the compact buffer
+// the rays that hit geometry (occluded == 1). Rays towards the sky
+// (occluded == 0) are ignored: the skybox contribution is already handled
+// by Irradiance_Generator.
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __raygen__collectOccluded()
 {
@@ -88,7 +88,7 @@ extern "C" __global__ void __raygen__collectOccluded()
 }
 
 // ----------------------------------------------------------------------------
-// Miss — raggio non ha colpito nulla (cielo visibile) → occluded = 0
+// Miss -- the ray hit nothing (sky visible) -> occluded = 0
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __miss__indirect()
 {
@@ -96,7 +96,7 @@ extern "C" __global__ void __miss__indirect()
 }
 
 // ----------------------------------------------------------------------------
-// Closest hit — raggio bloccato dalla geometria: occluded = 1, t_hit = tmax
+// Closest hit -- ray blocked by geometry: occluded = 1, t_hit = tmax
 // ----------------------------------------------------------------------------
 extern "C" __global__ void __closesthit__indirect()
 {

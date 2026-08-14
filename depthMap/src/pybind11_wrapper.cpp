@@ -227,7 +227,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 			py::ssize_t num_pixels = width * height;
 			py::ssize_t num_cameras = camDefs.size();
 			
-			// Restituiamo una py::array_t di shape (num_pixels, num_cameras)
+			// Return a py::array_t of shape (num_pixels, num_cameras)
 			return py::array_t<uint8_t>(
 				{ num_pixels, num_cameras },
 				{ py::ssize_t(sizeof(uint8_t) * num_cameras), py::ssize_t(sizeof(uint8_t)) },
@@ -323,9 +323,9 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		}, py::arg("ium_result"), py::arg("visibility"), py::arg("frames"),
 		   py::arg("grazing_max_deg") = 90.f)
 		.def("render", &osc::ColorTex_Generator::render)
-		// Slice per-camera scaricata on-demand dalla GPU (il mirror host completo
-		// num_pixels × num_cameras non scala); il download scrive direttamente
-		// nel buffer dell'array numpy restituito, senza copie intermedie.
+		// Per-camera slice, downloaded from the GPU on demand (the full host mirror,
+		// num_pixels x num_cameras, does not scale); the download writes straight into
+		// the buffer of the returned numpy array, with no intermediate copy.
 		.def("download_camera_colors", [](osc::ColorTex_Generator& self, int cam) {
 			py::ssize_t n = static_cast<py::ssize_t>(self.numPixels());
 			py::array_t<float> out({ n, py::ssize_t(3) });
@@ -333,8 +333,8 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				cam, reinterpret_cast<gdt::vec3f*>(out.mutable_data()));
 			return out;
 		}, py::arg("cam"))
-		// Maschera per-camera (uint8, shape (num_pixels,)): 1 = la camera contribuisce
-		// (occlusione ∧ frustum ∧ grazing, pre-peak → source-indipendente).
+		// Per-camera mask (uint8, shape (num_pixels,)): 1 = the camera contributes
+		// (unoccluded AND in frustum AND not grazing; pre-peak, so source-independent).
 		.def("download_camera_mask", [](osc::ColorTex_Generator& self, int cam) {
 			py::ssize_t n = static_cast<py::ssize_t>(self.numPixels());
 			py::array_t<uint8_t> out(n);
@@ -508,7 +508,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				throw py::value_error("cone_apertures_deg needs at least 2 values");
 			const size_t n_rings = cone_apertures_deg.size() - 1;
 
-			// Scalare (anche numpy.int64) → uniforme; sequenza → uno per anello.
+			// A scalar (numpy.int64 included) -> uniform; a sequence -> one per ring.
 			std::vector<int> spr;
 			try {
 				spr.assign(n_rings, samples_per_ring.cast<int>());
@@ -582,8 +582,8 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				r.t_hit_shared.data(),
 				base
 			);
-		}, "t_hit dei raggi condivisi, shape (tile_texels, num_samples): "
-		   ">0 hit, 0 miss, <0 raggio non lanciato.")
+		}, "t_hit of the shared rays, shape (tile_texels, num_samples): "
+		   ">0 hit, 0 miss, <0 ray not launched.")
 		.def_property_readonly("t_hit_mirror_np", [](osc::HemiVis_Generator::TileResult& r) {
 			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
 			py::ssize_t c = static_cast<py::ssize_t>(r.num_cams);
@@ -594,7 +594,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				r.t_hit_mirror.empty() ? nullptr : r.t_hit_mirror.data(),
 				base
 			);
-		}, "t_hit dei raggi specchio, shape (tile_texels, num_cams).")
+		}, "t_hit of the mirror rays, shape (tile_texels, num_cams).")
 		.def_property_readonly("dirs_np", [](osc::HemiVis_Generator::TileResult& r) {
 			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
 			py::ssize_t s = static_cast<py::ssize_t>(r.num_samples);
@@ -606,7 +606,7 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				reinterpret_cast<float*>(r.dirs_shared.empty() ? nullptr : r.dirs_shared.data()),
 				base
 			);
-		}, "Direzioni condivise tracciate (solo con set_debug_directions(True)).")
+		}, "Shared directions traced (only with set_debug_directions(True)).")
 		.def_property_readonly("dirs_mirror_np", [](osc::HemiVis_Generator::TileResult& r) {
 			py::ssize_t t = static_cast<py::ssize_t>(r.tile_texels);
 			py::ssize_t c = static_cast<py::ssize_t>(r.num_cams);
@@ -618,25 +618,25 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 				reinterpret_cast<float*>(r.dirs_mirror.empty() ? nullptr : r.dirs_mirror.data()),
 				base
 			);
-		}, "Direzioni specchio tracciate (solo con set_debug_directions(True)).");
+		}, "Mirror directions traced (only with set_debug_directions(True)).");
 
 	py::class_<osc::HemiVis_Generator>(m, "HemiVisGenerator")
 		.def(py::init<>())
 		.def("set_traversable", &osc::HemiVis_Generator::setTraversable, py::arg("model"))
 		.def("set_inputs", &osc::HemiVis_Generator::setInputs,
 			py::arg("ium_result"), py::arg("num_samples"), py::arg("tile_size") = 1024,
-			"num_samples = campioni Fibonacci condivisi per texel (S). Le direzioni "
-			"sono deterministiche e vanno ricostruite lato Python con la stessa "
-			"formula del kernel (vedi deviceProgramsHemiVis.cu).")
+			"num_samples = shared Fibonacci samples per texel (S). The directions are "
+			"deterministic and have to be rebuilt on the Python side with the same "
+			"formula as the kernel (see deviceProgramsHemiVis.cu).")
 		.def("set_cameras", [](osc::HemiVis_Generator& self,
 				const std::vector<gdt::vec3f>& cam_positions) {
 			self.setCameras(cam_positions);
 		}, py::arg("cam_positions"),
-		   "Posizioni mondo delle camere per i raggi specchio (lista vuota = nessuno).")
+		   "World positions of the cameras for the mirror rays (empty list = none).")
 		.def("set_debug_directions", &osc::HemiVis_Generator::setDebugDirections,
 			py::arg("enabled"),
-			"Restituisce anche le direzioni tracciate (dirs_np / dirs_mirror_np). "
-			"Serve al test di parità kernel↔torch; costa 12 B/raggio.")
+			"Also return the traced directions (dirs_np / dirs_mirror_np). "
+			"Needed by the kernel<->torch parity test; costs 12 B/ray.")
 		.def("num_tiles", &osc::HemiVis_Generator::numTiles)
 		.def("tile_size", &osc::HemiVis_Generator::tileSize)
 		.def("num_pixels", &osc::HemiVis_Generator::numPixels)

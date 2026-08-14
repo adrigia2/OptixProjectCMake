@@ -169,7 +169,7 @@ void Indirect_Generator::setInputs(const IUM_Generator::Result& ium_result,
     iumMasksBuffer.resize(numPix * sizeof(uint8_t));
     iumMasksBuffer.upload(ium_result.masks.data(), numPix);
 
-    // Alloca buffer di tile (worst case: tutti i campioni occlusi)
+    // Allocate the tile buffers (worst case: every sample occluded)
     tileCapacity = tileSz * sampleSide * sampleSide;
     tileRaysDirBuffer.resize(tileCapacity * sizeof(vec3f));
     tileRaysCosBuffer.resize(tileCapacity * sizeof(float));
@@ -216,7 +216,7 @@ Indirect_Generator::TileResult Indirect_Generator::renderTile(int tileIdx) {
     const unsigned int zero = 0u;
     tileCounterBuffer.upload(&zero, 1);
 
-    // Aggiorna i campi variabili del tile
+    // Update the tile's varying fields
     launchParams.tile_offset = tileOffset;
     launchParams.tile_size   = actualTileSize;
 
@@ -231,7 +231,7 @@ Indirect_Generator::TileResult Indirect_Generator::renderTile(int tileIdx) {
         actualTileSize, 1, 1));
     CUDA_SYNC_CHECK();
 
-    // Scarica il contatore
+    // Read the counter back
     unsigned int count = 0;
     tileCounterBuffer.download(&count, 1);
 

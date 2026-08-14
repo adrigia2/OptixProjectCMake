@@ -121,7 +121,7 @@ void ColorTex_Generator::setInputs(
     colorVarianceOutputBuffer.alloc(num_pixels * sizeof(vec3f));
     cudaMemset((void*)colorVarianceOutputBuffer.d_pointer(), 0, num_pixels * sizeof(vec3f));
 
-    // size_t fin dal primo prodotto: int*int overflowa già a 128 camere con texture 4096²
+    // size_t from the very first product: int*int already overflows at 128 cameras
     const size_t camColorBytes = size_t(num_pixels) * num_cameras * sizeof(vec3f);
     cameraColorOutputBuffer.alloc(camColorBytes);
     cudaMemset((void*)cameraColorOutputBuffer.d_pointer(), 0, camColorBytes);
@@ -175,9 +175,9 @@ void ColorTex_Generator::render() {
     result.color_variance.resize(launchParams.num_pixels);
     colorVarianceOutputBuffer.download(result.color_variance.data(), launchParams.num_pixels);
 
-    // I colori per-camera restano solo su GPU (num_pixels × num_cameras non scala
-    // su host: ~12 GB con texture 4096² e 60 camere); vanno letti una camera alla
-    // volta con downloadCameraColors().
+    // The per-camera colours stay on the GPU only (num_pixels x num_cameras does not
+    // scale on the host: ~12 GB at 4096^2 with 60 cameras); read them one camera at a
+    // time with downloadCameraColors().
     result.num_cameras = launchParams.num_cameras;
 }
 

@@ -8,8 +8,8 @@
 using namespace osc;
 
 //struct FrameResult {
-//	std::vector<float> depthData; // Dati della depth map
-//	std::string depthFileName; // Nome del file in cui è salvata la depth map
+//	std::vector<float> depthData; // depth map data
+//	std::string depthFileName; // name of the file the depth map is saved to
 //};
 
 	
@@ -21,10 +21,10 @@ public:
 
 	struct Result
 	{
-		std::vector<float> depthData; // Dati della depth map
-		std::vector<vec3f> positionalData; // Dati delle posizioni 3D
-		std::vector<vec3f> normalData; // Dati delle normali 3D
-		std::vector<uint8_t> maskData; // Maschere di validità per i pixel
+		std::vector<float> depthData; // depth map data
+		std::vector<vec3f> positionalData; // 3D positions
+		std::vector<vec3f> normalData; // 3D normals
+		std::vector<uint8_t> maskData; // per-pixel validity mask
 
 		bool hasDepthData() const { return !depthData.empty(); }
 		bool hasPositionalData() const { return !positionalData.empty(); }
@@ -59,13 +59,13 @@ public:
 
 protected:
 
-	// result buffers per la raygen program
-    CUDABuffer depthBuffer;  // Aggiunto buffer per depth map
-	CUDABuffer positionBuffer; // Già esistente - per la raygen program
-	CUDABuffer normalBuffer;   // Già esistente - per la raygen program
-	CUDABuffer maskBuffer;     // Aggiunto buffer per maschere di validità
+	// result buffers for the raygen program
+    CUDABuffer depthBuffer;
+	CUDABuffer positionBuffer;
+	CUDABuffer normalBuffer;
+	CUDABuffer maskBuffer;
 
-	LaunchParams_DPN launchParams; // Parametri di lancio specifici per depth map
-	Result result; // Per memorizzare i risultati della generazione depth map
+	LaunchParams_DPN launchParams; // launch parameters of the depth pass
+	Result result;                 // results of the depth pass
 private:
 };

@@ -33,9 +33,9 @@ namespace osc {
 		vec2i size;
 
 		struct {
-			vec3f* worldVertices;  // Posizioni 3D reali dei vertici
-			vec2f* uvVertices;     // Coordinate UV dei vertici
-			vec3i* indices;        // Indici dei triangoli
+			vec3f* worldVertices;  // the vertices' real 3D positions
+			vec2f* uvVertices;     // the vertices' UV coordinates
+			vec3i* indices;        // triangle indices
 			uint32_t numTriangles; // Numero di triangoli
 		} data;
 

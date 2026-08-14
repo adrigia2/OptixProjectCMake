@@ -22,7 +22,7 @@
 #include <iostream>
 #include "gdt/math/vec.h"
 
-// Include nlohmann/json
+// nlohmann/json
 #include "nlohmann/json.hpp"
 
 namespace osc {
@@ -34,11 +34,11 @@ namespace osc {
 	using namespace gdt;
 	using json = nlohmann::json;
 
-	// Parser JSON robusto per transforms.json (formato NeRF)
+	// Tolerant JSON parser for transforms.json (NeRF format)
 	struct TransformFrame {
 		float transform_matrix[4][4];
 		std::string file_path;
-		std::string depth_path; // Nuovo campo depth_path
+		std::string depth_path;
 
 		vec3f getPosition() const {
 			return vec3f(transform_matrix[0][3],
@@ -71,7 +71,7 @@ namespace osc {
 
 		void setDepthPath(const std::string& path) {
 			depth_path = path;
-			std::cout << "Depth path impostato a: " << depth_path << std::endl;
+			std::cout << "Depth path set to: " << depth_path << std::endl;
 		}
 
 
@@ -105,34 +105,34 @@ namespace osc {
 			}
 		}
 
-		// Aggiunto campo sharpness
+		// sharpness field
 		float sharpness = 1.0f;
 	};
 
 	struct TransformData {
 		float camera_angle_x;
-		float camera_angle_y = 0.0f;  // opzionale
-		float fl_x = 0.0f;            // opzionale
-		float fl_y = 0.0f;            // opzionale
-		float cx = 0.0f;              // opzionale
-		float cy = 0.0f;              // opzionale
-		float scale = 1.0f;           // opzionale
-		int aabb_scale = 1;           // opzionale
+		float camera_angle_y = 0.0f;  // optional
+		float fl_x = 0.0f;            // optional
+		float fl_y = 0.0f;            // optional
+		float cx = 0.0f;              // optional
+		float cy = 0.0f;              // optional
+		float scale = 1.0f;           // optional
+		int aabb_scale = 1;           // optional
 		int w, h;
 		std::vector<TransformFrame> frames;
 
-		// Nuovo metodo per salvare con depth_path
+		// Write the file back out, adding depth_path to every frame
 		bool saveToFileWithDepth(const std::string& filename,
 			const std::string& depthDir = "depth") const {
 			try {
 				json j;
 
-				// Copia tutti i campi base
+				// Copy the mandatory fields
 				j["camera_angle_x"] = camera_angle_x;
 				j["w"] = w;
 				j["h"] = h;
 
-				// Campi opzionali (aggiungi solo se diversi dal valore di default)
+				// Optional fields (written only when they differ from the default)
 				if (camera_angle_y != 0.0f) {
 					j["camera_angle_y"] = camera_angle_y;
 				}
@@ -155,19 +155,19 @@ namespace osc {
 					j["aabb_scale"] = aabb_scale;
 				}
 
-				// Crea l'array dei frames con depth_path
+				// Build the frames array, with depth_path
 				j["frames"] = json::array();
 
 				for (const auto& frame : frames) {
 					json frameJson;
 
-					// File path originale
+					// Original file path
 					frameJson["file_path"] = frame.file_path;
 
-					// Depth path - usa il percorso assoluto nella directory depthDir
+					// Depth path - the absolute path inside depthDir
 					frameJson["depth_path"] = frame.depth_path;
 
-					// Sharpness (opzionale)
+					// Sharpness (optional)
 					if (frame.sharpness != 1.0f) {
 						frameJson["sharpness"] = frame.sharpness;
 					}
@@ -186,54 +186,54 @@ namespace osc {
 					j["frames"].push_back(frameJson);
 				}
 
-				// Scrivi su file con formattazione
+				// Write the file out, formatted
 				std::ofstream outFile(filename);
 				if (!outFile.is_open()) {
-					std::cerr << "Impossibile aprire il file per la scrittura: " << filename << std::endl;
+					std::cerr << "Cannot open the file for writing: " << filename << std::endl;
 					return false;
 				}
 
-				outFile << j.dump(4);  // Indent con 4 spazi per leggibilità
+				outFile << j.dump(4);  // 4-space indent, for readability
 				outFile.close();
 
 				std::cout << "\n==================================================" << std::endl;
-				std::cout << "File transformDepth.json salvato con successo!" << std::endl;
+				std::cout << "transformDepth.json written successfully" << std::endl;
 				std::cout << "  File: " << filename << std::endl;
 				std::cout << "  Frames: " << frames.size() << std::endl;
-				std::cout << "  Directory depth maps: " << depthDir << std::endl;
+				std::cout << "  Depth map directory: " << depthDir << std::endl;
 				std::cout << "==================================================" << std::endl;
 
 				return true;
 
 			}
 			catch (const std::exception& e) {
-				std::cerr << "Errore durante il salvataggio del file JSON: " << e.what() << std::endl;
+				std::cerr << "Error while writing the JSON file: " << e.what() << std::endl;
 				return false;
 			}
 		}
 
-		// Metodo modificato loadFromFile per supportare i nuovi campi
+		// loadFromFile, extended to read the newer fields
 		bool loadFromFile(const std::string& filename) {
 			try {
 				std::ifstream file(filename);
 				if (!file.is_open()) {
-					std::cerr << "Impossibile aprire il file: " << filename << std::endl;
+					std::cerr << "Cannot open the file: " << filename << std::endl;
 					return false;
 				}
 
 				json j;
 				file >> j;
 
-				// Parse camera_angle_x (obbligatorio)
+				// Parse camera_angle_x (mandatory)
 				if (j.contains("camera_angle_x")) {
 					camera_angle_x = j["camera_angle_x"].get<float>();
 				}
 				else {
-					std::cerr << "WARN: 'camera_angle_x' non trovato, uso default 0.0" << std::endl;
+					std::cerr << "WARN: 'camera_angle_x' not found, defaulting to 0.0" << std::endl;
 					camera_angle_x = 0.0f;
 				}
 
-				// Parse campi opzionali
+				// Parse the optional fields
 				camera_angle_y = j.value("camera_angle_y", 0.0f);
 				fl_x = j.value("fl_x", 0.0f);
 				fl_y = j.value("fl_y", 0.0f);
@@ -242,28 +242,28 @@ namespace osc {
 				scale = j.value("scale", 1.0f);
 				aabb_scale = j.value("aabb_scale", 1);
 
-				// Parse w e h
+				// Parse w and h
 				w = j.value("w", 800);
 				h = j.value("h", 800);
 
-				// Parse frames array
+				// Parse the frames array
 				if (j.contains("frames") && j["frames"].is_array()) {
 					for (const auto& frame : j["frames"]) {
 						TransformFrame cam;
 
-						// Inizializza matrice identità
+						// Start from the identity matrix
 						for (int i = 0; i < 4; i++) {
 							for (int k = 0; k < 4; k++) {
 								cam.transform_matrix[i][k] = (i == k) ? 1.0f : 0.0f;
 							}
 						}
 
-						// Parse file_path (opzionale)
+						// Parse file_path (optional)
 						if (frame.contains("file_path")) {
 							cam.file_path = frame["file_path"].get<std::string>();
 						}
 
-						// Parse sharpness (opzionale)
+						// Parse sharpness (optional)
 						cam.sharpness = frame.value("sharpness", 1.0f);
 
 						// Parse transform_matrix
@@ -272,7 +272,7 @@ namespace osc {
 
 							const auto& matrix = frame["transform_matrix"];
 
-							// Verifica che sia una matrice 4x4
+							// Check that it really is a 4x4 matrix
 							if (matrix.size() >= 4) {
 								for (int i = 0; i < 4; i++) {
 									if (matrix[i].is_array() && matrix[i].size() >= 4) {
@@ -281,31 +281,31 @@ namespace osc {
 										}
 									}
 									else {
-										std::cerr << "WARN: Riga " << i << " della matrice non è un array valido" << std::endl;
+										std::cerr << "WARN: row " << i << " of the matrix is not a valid array" << std::endl;
 									}
 								}
 							}
 							else {
-								std::cerr << "WARN: transform_matrix non ha 4 righe" << std::endl;
+								std::cerr << "WARN: transform_matrix does not have 4 rows" << std::endl;
 							}
 						}
 						else {
-							std::cerr << "WARN: transform_matrix non trovata o non è un array" << std::endl;
+							std::cerr << "WARN: transform_matrix missing, or not an array" << std::endl;
 						}
 
 						frames.push_back(cam);
 					}
 				}
 				else {
-					std::cerr << "ERROR: 'frames' non trovato o non è un array" << std::endl;
+					std::cerr << "ERROR: 'frames' missing, or not an array" << std::endl;
 					return false;
 				}
 
 				std::cout << "==================================================" << std::endl;
-				std::cout << "Transform JSON caricato con successo!" << std::endl;
+				std::cout << "Transform JSON loaded successfully" << std::endl;
 				std::cout << "  Frames: " << frames.size() << std::endl;
-				std::cout << "  Risoluzione: " << w << "x" << h << std::endl;
-				std::cout << "  Camera angle X: " << camera_angle_x << " radianti" << std::endl;
+				std::cout << "  Resolution: " << w << "x" << h << std::endl;
+				std::cout << "  Camera angle X: " << camera_angle_x << " radians" << std::endl;
 				if (fl_x != 0.0f) {
 					std::cout << "  Focal length X: " << fl_x << std::endl;
 				}
@@ -318,46 +318,46 @@ namespace osc {
 
 			}
 			catch (const json::parse_error& e) {
-				std::cerr << "Errore di parsing JSON: " << e.what() << std::endl;
+				std::cerr << "JSON parse error: " << e.what() << std::endl;
 				std::cerr << "  at byte " << e.byte << std::endl;
 				return false;
 			}
 			catch (const json::type_error& e) {
-				std::cerr << "Errore di tipo JSON: " << e.what() << std::endl;
+				std::cerr << "JSON type error: " << e.what() << std::endl;
 				return false;
 			}
 			catch (const std::exception& e) {
-				std::cerr << "Errore durante il caricamento: " << e.what() << std::endl;
+				std::cerr << "Error while loading: " << e.what() << std::endl;
 				return false;
 			}
 		}
 
-		// Metodo helper per validare i dati caricati
+		// Helper: sanity-check what was loaded
 		bool validate() const {
 			if (frames.empty()) {
-				std::cerr << "Nessun frame caricato" << std::endl;
+				std::cerr << "No frame loaded" << std::endl;
 				return false;
 			}
 
 			if (w <= 0 || h <= 0) {
-				std::cerr << "Dimensioni immagine non valide: " << w << "x" << h << std::endl;
+				std::cerr << "Invalid image size: " << w << "x" << h << std::endl;
 				return false;
 			}
 
 			if (camera_angle_x <= 0.0f || camera_angle_x > 3.15f) {
-				std::cerr << "WARN: camera_angle_x sembra non valido: " << camera_angle_x << std::endl;
+				std::cerr << "WARN: camera_angle_x looks invalid: " << camera_angle_x << std::endl;
 			}
 
 			return true;
 		}
 
-		// Metodo helper per stampare informazioni di debug
+		// Helper: print debug information
 		void printDebugInfo(size_t maxFrames = 3) const {
 			std::cout << "\n=== Transform Data Debug Info ===" << std::endl;
-			std::cout << "Numero di frames: " << frames.size() << std::endl;
-			std::cout << "Risoluzione: " << w << "x" << h << std::endl;
+			std::cout << "Number of frames: " << frames.size() << std::endl;
+			std::cout << "Resolution: " << w << "x" << h << std::endl;
 			std::cout << "Camera FOV X: " << camera_angle_x << " rad ("
-				<< (camera_angle_x * 180.0f / 3.14159f) << " gradi)" << std::endl;
+				<< (camera_angle_x * 180.0f / 3.14159f) << " degrees)" << std::endl;
 
 			size_t numToPrint = std::min(maxFrames, frames.size());
 			for (size_t i = 0; i < numToPrint; i++) {
@@ -369,7 +369,7 @@ namespace osc {
 			}
 
 			if (frames.size() > maxFrames) {
-				std::cout << "\n... e altri " << (frames.size() - maxFrames) << " frames" << std::endl;
+				std::cout << "\n... and " << (frames.size() - maxFrames) << " more frames" << std::endl;
 			}
 			std::cout << "==================================\n" << std::endl;
 		}

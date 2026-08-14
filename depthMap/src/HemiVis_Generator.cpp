@@ -170,12 +170,12 @@ void HemiVis_Generator::setInputs(const IUM_Generator::Result& ium_result,
     iumMasksBuffer.upload(ium_result.masks.data(), numPix);
 
     // Il conto va fatto in size_t: tile grandi e S alto sforano INT_MAX in fretta
-    // (a S=16384 bastano 131k texel per tile), e una dimensione negativa
+    // (at S=16384, 131k texels per tile are enough), and a negative size
     // azzererebbe silenziosamente il buffer.
     const size_t sharedRays = (size_t)tileSz * (size_t)numSmp;
     if (sharedRays > (size_t)std::numeric_limits<int>::max())
         throw std::runtime_error(
-            "HemiVis_Generator: tile_size × num_samples overflow (" +
+            "HemiVis_Generator: tile_size x num_samples overflow (" +
             std::to_string(sharedRays) + " rays); reduce tile_size (" +
             std::to_string(tileSz) + ") or num_samples (" +
             std::to_string(numSmp) + ")");
@@ -190,8 +190,8 @@ void HemiVis_Generator::setInputs(const IUM_Generator::Result& ium_result,
     launchParams.t_hit_shared = (float*)tHitSharedBuffer.d_pointer();
     launchParams.epsilon      = 1e-4f;
 
-    // setCameras può essere stato chiamato prima di setInputs: il buffer specchio
-    // dipende da tileSz, quindi va riallocato ora.
+    // setCameras may have been called before setInputs: the mirror buffer depends
+    // on tileSz, so it has to be reallocated here.
     if (!camPos.empty()) {
         const std::vector<vec3f> cams = camPos;
         setCameras(cams);
@@ -224,7 +224,7 @@ void HemiVis_Generator::setCameras(const std::vector<vec3f>& camPositions)
         const size_t mirrorRays = (size_t)tileSz * camPos.size();
         tHitMirrorBuffer.resize(mirrorRays * sizeof(float));
         launchParams.t_hit_mirror = (float*)tHitMirrorBuffer.d_pointer();
-        if (debugDirs)                 // il numero di corsie può essere cambiato
+        if (debugDirs)                 // the lane count may have changed
             setDebugDirections(true);
     }
 }
@@ -271,8 +271,8 @@ HemiVis_Generator::TileResult HemiVis_Generator::renderTile(int tileIdx) {
     res.num_samples = numSmp;
     res.num_cams    = (int)camPos.size();
 
-    // Passata condivisa: (texel, campione). Ogni thread scrive il proprio slot,
-    // quindi non serve azzerare il buffer tra un tile e l'altro.
+    // Shared pass: (texel, sample). Every thread writes its own slot, so there is
+    // no need to clear the buffer between tiles.
     launchParams.mode = LaunchParams_HemiVis::MODE_SHARED;
     launchParamsBuffer.upload(&launchParams, 1);
     OPTIX_CHECK(optixLaunch(pipeline, 0,
@@ -289,7 +289,7 @@ HemiVis_Generator::TileResult HemiVis_Generator::renderTile(int tileIdx) {
         dbgDirsBuffer.download(res.dirs_shared.data(), res.dirs_shared.size());
     }
 
-    // Passata specchio: (texel, camera)
+    // Mirror pass: (texel, camera)
     if (!camPos.empty()) {
         launchParams.mode = LaunchParams_HemiVis::MODE_MIRROR;
         launchParamsBuffer.upload(&launchParams, 1);

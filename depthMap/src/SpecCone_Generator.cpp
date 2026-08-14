@@ -200,12 +200,12 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
             throw std::runtime_error("SpecCone_Generator: samples_per_ring[" +
                                      std::to_string(i) + "] must be > 0");
 
-    // Campioni per livello: [0] = 1 (raggio specchio), poi un valore per anello
+    // Samples per level: [0] = 1 (the mirror ray), then one value per ring
     ringSamples.assign(numRings + 1, 1);
     for (int i = 0; i < numRings; ++i)
         ringSamples[i + 1] = samplesPerRing[i];
 
-    // Bordi degli anelli: coseni delle semi-aperture (apertura totale / 2)
+    // Ring edges: cosines of the half-apertures (total aperture / 2)
     std::vector<float> ringCos(coneAperturesDeg.size());
     constexpr float DEG2RAD = 3.14159265358979323846f / 180.0f;
     for (size_t i = 0; i < coneAperturesDeg.size(); ++i)
@@ -227,11 +227,11 @@ void SpecCone_Generator::setInputs(const IUM_Generator::Result& ium_result,
     ringSamplesBuffer.resize(ringSamples.size() * sizeof(int));
     ringSamplesBuffer.upload(ringSamples.data(), ringSamples.size());
 
-    // Buffer di tile (worst case: tutti i campioni colpiscono la geometria).
-    // Il conto va fatto in size_t: con tile grandi e molti campioni il prodotto
-    // sfora INT_MAX, e una capacità negativa azzererebbe i raggi scaricati.
+    // Tile buffers (worst case: every sample hits geometry).
+    // The count has to be done in size_t: with large tiles and many samples the
+    // product overflows INT_MAX, and a negative capacity would zero the rays read back.
     const int numLevels = numRings + 1;
-    size_t raysPerTexel = 1;                       // livello 0 = raggio specchio
+    size_t raysPerTexel = 1;                       // level 0 = the mirror ray
     for (int i = 0; i < numRings; ++i)
         raysPerTexel += (size_t)samplesPerRing[i];
     const size_t capacity = (size_t)tileSz * raysPerTexel;
@@ -330,7 +330,7 @@ SpecCone_Generator::TileResult SpecCone_Generator::renderTile(int tileIdx) {
 
     const int numLevels = numRings + 1;
 
-    // Reset counter e accumuli per texel
+    // Reset the counter and the per-texel accumulators
     const unsigned int zero = 0u;
     tileCounterBuffer.upload(&zero, 1);
     CUDA_CHECK(Memset((void*)skySumBuffer.d_pointer(), 0, skySumBuffer.sizeInBytes));

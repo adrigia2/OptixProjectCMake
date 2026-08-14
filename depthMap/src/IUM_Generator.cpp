@@ -95,9 +95,9 @@ void IUM_Generator::render()
 	launchParamsBuffer.upload(&launchParams, 1);
 	OptixManager::instance().render(launchParams.size.x, launchParams.size.y, 1, pipeline, launchParamsBuffer, sbt);
 
-	// Scarica i risultati dalla GPU
+	// Download the results from the GPU
 	int dimension = launchParams.size.x * launchParams.size.y;
-	// Ridimensiona i vettori per contenere i risultati
+	// Size the vectors to hold the results
 
 	LogManager::Log("IUM generation completed: %u pixels processed",
 		dimension);
@@ -128,18 +128,18 @@ void IUM_Generator::cleanup()
 
 void IUM_Generator::setTraversable(const TriangleMesh& model)
 {
-	// Costruisci la GAS in UV space (come prima)
+	// Build the GAS in UV space
 	launchParams.traversable = createGAS(model);
 
-	// NUOVO: Carica i vertici 3D reali per il mapping
+	// Upload the real 3D vertices, for the mapping back to world space
 	worldVertexBuffer.alloc_and_upload(model.vertex);
 	launchParams.data.worldVertices = (vec3f*)worldVertexBuffer.d_pointer();
 
-	// NUOVO: Carica le coordinate UV
+	// Upload the UV coordinates
 	uvCoordBuffer.alloc_and_upload(model.texcoord);
 	launchParams.data.uvVertices = (vec2f*)uvCoordBuffer.d_pointer();
 
-	// NUOVO: Passa gli indici (gi� caricati in buildAccel)
+	// Pass the indices along (already uploaded in buildAccel)
 	launchParams.data.indices = (vec3i*)indexBuffer.d_pointer();
 	launchParams.data.numTriangles = (uint32_t)model.index.size();
 
@@ -177,14 +177,14 @@ void IUM_Generator::printStatus()
 
 OptixTraversableHandle IUM_Generator::createGAS(const TriangleMesh& model)
 {
-	// 1) Upload indici (uguali)
+	// 1) Upload the indices (unchanged)
 	indexBuffer.alloc_and_upload(model.index);
 
-	// 2) Costruisci un buffer di "posizioni" in UV space: (u,v,0)
+	// 2) Build a buffer of "positions" in UV space: (u, v, 0)
 	std::vector<vec3f> uvVerts;
 	uvVerts.resize(model.vertex.size());
 	for (size_t i = 0; i < uvVerts.size(); ++i) {
-		const vec2f uv = model.texcoord[i];          // <-- serve nel model
+		const vec2f uv = model.texcoord[i];          // <-- the model has to carry UVs
 		uvVerts[i] = vec3f(uv.x, uv.y, 0.f);
 	}
 	vertexBuffer.alloc_and_upload(uvVerts);

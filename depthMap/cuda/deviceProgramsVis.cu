@@ -51,7 +51,7 @@ namespace vis {
 
         const int out_idx = pixel_idx * optixLaunchParams.camera_data.num_cameras + camera_idx;
 
-        // Se IUM ha determinato che il pixel non poggia sulla mesh, è sempre invisibile
+        // When IUM decided the pixel does not sit on the mesh, it is always invisible
         if (optixLaunchParams.ium_data.ium_masks[pixel_idx] == 0) {
             optixLaunchParams.results.visibility_results[out_idx] = 0;
             return;
@@ -60,7 +60,7 @@ namespace vis {
         vec3f target_pos = optixLaunchParams.ium_data.ium_positions[pixel_idx];
         CameraDef cam = optixLaunchParams.camera_data.cameras[camera_idx];
 
-        // Raggio dalla camera verso il punto target
+        // Ray from the camera towards the target point
         vec3f ray_dir = target_pos - cam.position;
         float distance = length(ray_dir);
         
@@ -71,14 +71,14 @@ namespace vis {
         // TODO: Optional frustom cull checking here before tracing
 
         VisibilityPRD prd;
-        prd.visible = true; // Assumiamo visibile finché non sbattiamo
+        prd.visible = true; // assume visible until something is hit
 
         uint32_t u0, u1;
         packPointer(&prd, u0, u1);
 
-        // Traccia lo shadow ray dalla camera verso il punto Target. 
-        // Usiamo un tmax leggermente inferiore alla distanza reale (-1e-4f) per evitare auto-intersezioni 
-        // con il bersaglio stesso sulla superficie.
+        // Trace the shadow ray from the camera towards the target point.
+        // tmax is kept slightly below the real distance (-1e-3f) to avoid
+        // self-intersecting the target itself on the surface.
         optixTrace(optixLaunchParams.traversable,
             cam.position,
             ray_dir,
@@ -92,7 +92,7 @@ namespace vis {
             0,             // missSBTIndex
             u0, u1);
 
-        // Scriviamo il risultato (1 se è visibile e NON intersecta nulla in mezzo, 0 altrimenti)
+        // Write the result (1 when visible and nothing intersects in between, 0 otherwise)
         optixLaunchParams.results.visibility_results[out_idx] = prd.visible ? 1 : 0;
     }
 

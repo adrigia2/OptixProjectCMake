@@ -220,7 +220,7 @@ void Depth_Generator::setTraversable(const TriangleMesh& model)
 void Depth_Generator::cleanup()
 {
 	OptixActor::cleanup();
-	// Pulizia dei buffer specifici di Depth_Generator
+	// Free the buffers owned by Depth_Generator
 	depthBuffer.free();
 	positionBuffer.free();
 	normalBuffer.free();

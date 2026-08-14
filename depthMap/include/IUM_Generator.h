@@ -17,9 +17,9 @@ public:
 
 	struct Result
 	{
-		std::vector<vec3f> positions; // Posizioni 3D reali dei vertici
-		std::vector<vec3f> normals;   // Normali di faccia per texel
-		std::vector<uint8_t> masks;    // Maschere per i pixel validi
+		std::vector<vec3f> positions; // real 3D positions behind each texel
+		std::vector<vec3f> normals;   // face normals per texel
+		std::vector<uint8_t> masks;   // mask of the valid texels
 		bool hasPositions() const { return !positions.empty(); }
 		bool hasNormals() const { return !normals.empty(); }
 		bool hasMasks() const { return !masks.empty(); }
@@ -51,21 +51,21 @@ public:
 protected:
 	OptixTraversableHandle createGAS(const TriangleMesh& model) override;
 
-	CUDABuffer vertexBuffer;     // Gi� esistente - per la GAS in UV space
-	CUDABuffer indexBuffer;        // Gi� esistente
-	CUDABuffer asBuffer;           // Gi� esistente
+	CUDABuffer vertexBuffer;       // for the GAS built in UV space
+	CUDABuffer indexBuffer;
+	CUDABuffer asBuffer;
 
-	// result buffers per la raygen program
-	CUDABuffer positionsBuffer;    // Gi� esistente
-	CUDABuffer normalsBuffer;      // Normali di faccia per texel
-	CUDABuffer masksBuffer;        // Gi� esistente
+	// result buffers for the raygen program
+	CUDABuffer positionsBuffer;
+	CUDABuffer normalsBuffer;      // face normals per texel
+	CUDABuffer masksBuffer;
 	
-	// NUOVI BUFFERS per inverse UV mapping
-	CUDABuffer worldVertexBuffer;  // Vertici 3D reali del modello
-	CUDABuffer uvCoordBuffer;      // Coordinate UV per il dispositivo
+	// Buffers specific to the inverse UV mapping
+	CUDABuffer worldVertexBuffer;  // the model's real 3D vertices
+	CUDABuffer uvCoordBuffer;      // UV coordinates, on the device
 
-	LaunchParams_IUM launchParams; // Parametri di lancio specifici per IUM
+	LaunchParams_IUM launchParams; // launch parameters of the IUM pass
 
 private:
-	Result result; // Per memorizzare i risultati della generazione IUM
+	Result result;                 // results of the IUM pass
 };

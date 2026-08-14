@@ -27,7 +27,7 @@ namespace osc {
         uint8_t* ium_masks;
         int      num_pixels;
 
-        // Grazing-angle cull: discard camera contributions where n·v < grazing_min_cos.
+        // Grazing-angle cull: discard camera contributions where n.v < grazing_min_cos.
         // Set to -1.f (or any value <= -1) to disable the filter entirely.
         float    grazing_min_cos;
 
@@ -42,14 +42,14 @@ namespace osc {
         vec3f* color_output;
         vec3f* color_min_output;      // per-texel minimum color across cameras
         vec3f* color_max_output;      // per-texel maximum color across cameras
-        vec3f* color_variance_output; // per-texel variance (E[X²]-E[X]²) across cameras
+        vec3f* color_variance_output; // per-texel variance (E[X^2]-E[X]^2) across cameras
         // Output: per-camera, camera-major [cam * num_pixels + pixel]
-        // (ogni slice di camera è contigua → download per-camera senza stride)
+        // (each camera slice is contiguous -> per-camera download with no stride)
         vec3f* camera_color_output;
-        // Maschera per-camera, stessa disposizione camera-major. 1 = la camera
-        // contribuisce (IUM valido ∧ occlusione ∧ non-grazing ∧ dentro frame),
-        // 0 altrimenti. Scritta PRIMA del filtro peak → source-indipendente,
-        // riutilizzabile come visibility condivisa.
+        // Per-camera mask, same camera-major layout. 1 = the camera contributes
+        // (IUM valid AND unoccluded AND not grazing AND inside the frame), 0
+        // otherwise. Written BEFORE the peak filter, hence source-independent and
+        // reusable as shared visibility.
         uint8_t* camera_mask_output;
     };
 

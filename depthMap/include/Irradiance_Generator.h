@@ -35,10 +35,10 @@ public:
     void setTraversable(const TriangleMesh& model) override;
     void cleanup() override;
 
-    // Carica gli input. skyboxSize = (width, height) in pixel della envmap equirettangolare.
-    // sampleSide = N → vengono usati N*N campioni per texel.
-    // skyboxYawDegrees = rotazione attorno all'asse verticale Z (up in Blender space).
-    //   Default 0°: -Y (Blender camera forward) al centro dell'envmap.
+    // Load the inputs. skyboxSize = (width, height) in pixels of the equirectangular envmap.
+    // sampleSide = N -> N*N samples are used per texel.
+    // skyboxYawDegrees = rotation around the vertical Z axis (up in Blender space).
+    //   Default 0 degrees: -Y (Blender's camera forward) at the centre of the envmap.
     //   Regolarlo se la HDRI ha un'orientazione diversa.
     void setInputs(const IUM_Generator::Result& ium_result,
                    const std::vector<vec3f>& skybox,
