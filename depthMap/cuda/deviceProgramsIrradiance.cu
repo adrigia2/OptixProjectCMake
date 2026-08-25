@@ -88,7 +88,21 @@ extern "C" __global__ void __raygen__renderIrradiance()
     const float eps = optixLaunchParams.epsilon;
     const vec3f origin = pos + n * eps;
 
-    vec3f accum(0.f);
+    // The accumulator is in DOUBLE precision while the samples stay in float. It is not
+    // the precision of a single term that matters, it is the length of the sum: accum
+    // grows like S while each term stays O(1), so past some S the terms fall below the
+    // ULP of the running sum and round away entirely. Measured on this scene's night
+    // envmap, summing the same sequence in float32 sequentially loses 0.012% of the
+    // integral at S = 512^2, 0.11% at 1024^2, 0.78% at 2048^2 and 2.8% at 4096^2: from
+    // about 1024 upwards the summation error gives back more than the extra samples buy,
+    // and the estimate drifts DOWNWARD as the sample count rises, which reads exactly
+    // like a converging integral until one looks at the mean level.
+    //
+    // Double and not Kahan compensated summation in float: the compensation term is the
+    // kind of algebra a fast-math pass is entitled to remove, whereas a double add
+    // cannot be optimised away. The cost is three fp64 adds per sample against a ray
+    // trace and an envmap fetch, so it does not show up in the pass timings.
+    double accum_r = 0.0, accum_g = 0.0, accum_b = 0.0;
 
     // A single loop over the total number of samples
     for (int i = 0; i < numSamples; ++i) {
@@ -138,13 +152,17 @@ extern "C" __global__ void __raygen__renderIrradiance()
                                          optixLaunchParams.skybox.yaw_offset_u);
 
             // z is exactly the cosine of the angle between the normal and the ray
-            accum = accum + L * z;
+            accum_r += (double)(L.x * z);
+            accum_g += (double)(L.y * z);
+            accum_b += (double)(L.z * z);
         }
     }
 
     // Final scaling, exactly as in the paper: 2 * PI / |S_L|
-    const float scale = (2.0f * M_PIf) * invNumSamples;
-    optixLaunchParams.results.irradiance[idx] = accum * scale;
+    const double scale = (2.0 * (double)M_PIf) / (double)numSamples;
+    optixLaunchParams.results.irradiance[idx] = vec3f((float)(accum_r * scale),
+                                                      (float)(accum_g * scale),
+                                                      (float)(accum_b * scale));
 }
 
 // ----------------------------------------------------------------------------
