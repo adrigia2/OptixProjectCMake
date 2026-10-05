@@ -81,7 +81,7 @@ Every pass is a subclass of `OptixActor` with its own `.cu` kernel and its own
 | Class | What it computes | Kernel | Launch params |
 |---|---|---|---|
 | `Depth_Generator` | Per-pixel depth, world position, normal and mask, in camera space | `devicePrograms.cu` | `LaunchParams_DPN.h` |
-| `IUM_Generator` | Inverse UV mapping: per-texel world position, **face normal**, mask | `deviceProgramsIUM.cu` | `LaunchParams_IUM.h` |
+| `IUM_Generator` | Inverse UV mapping: per-texel world position, mesh normal (face or interpolated OBJ `vn`), mask | `deviceProgramsIUM.cu` | `LaunchParams_IUM.h` |
 | `Visibility_Generator` | Per-texel visibility from a set of cameras (occlusion only) | `deviceProgramsVis.cu` | `LaunchParams_Vis.h` |
 | `ColorTex_Generator` | Bakes observed colour into texture space; also emits the authoritative per-camera masks | `deviceProgramsColorTex.cu` | `LaunchParams_ColorTex.h` |
 | `Irradiance_Generator` | Per-texel HDR irradiance from the skybox | `deviceProgramsIrradiance.cu` | `LaunchParams_Irradiance.h` |
@@ -180,10 +180,15 @@ pybind11-stubgen OptixProgrammablePasses -o stubs
 swap, and the equirectangular envmap lookup uses +Z as zenith. Normal maps baked in Blender in
 object/world space need no remapping.
 
-**OBJ vertex normals are not loaded.** `TriangleMesh` reads positions, indices and UVs only,
-so `IUM_Generator` computes *face* normals from the cross product of the triangle's world-space
-edges, assuming CCW winding. Smooth normals have to be supplied as a baked normal map from the
-Python side.
+**OBJ vertex normals are optional.** `TriangleMesh` reads positions, indices, UVs and, when the
+file has them, the per-corner normals (`vn`, in `TriangleMesh::normal`, `has_normals` from
+Python). `IUM_Generator::setMeshNormals` picks the texel normal: `"triangle"` (default) is the
+*face* normal from the cross product of the triangle's world-space edges, assuming CCW winding;
+`"obj"` interpolates the three corner `vn` with the same barycentrics as the position, which
+reproduces Blender's shading normal (smooth or flat as the file says, sharp edges included)
+without reading the `s` groups. On `TableAndOtherInterior` it matches Blender's own baked flat
+normal map to p99 0.03° on the smooth objects, where the face normal is off by p50 4°, p99 37°.
+A baked normal map, when supplied from the Python side, still replaces either.
 
 **Depth is a Euclidean distance.** The depth kernel normalises the ray direction before
 tracing, so what comes back is a world-space distance, not a camera-axis Z depth. The Python

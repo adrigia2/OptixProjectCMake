@@ -37,6 +37,8 @@ namespace osc {
 			vec2f* uvVertices;     // the vertices' UV coordinates
 			vec3i* indices;        // triangle indices
 			uint32_t numTriangles; // triangle count
+			vec3f* worldNormals;   // the OBJ normal of each vertex, or nullptr
+			uint32_t useObjNormals; // 1 → interpolate worldNormals, 0 → triangle normal
 		} data;
 
 		OptixTraversableHandle traversable;

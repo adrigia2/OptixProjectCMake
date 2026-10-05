@@ -18,4 +18,11 @@ struct TriangleMesh {
     std::vector<vec3f> vertex;
     std::vector<vec3i> index;
     std::vector<vec2f> texcoord;
+    // One per entry of `vertex` (the vertices are unrolled, one per triangle corner):
+    // the OBJ `vn` of that corner, normalised, or (0,0,0) where the corner has none.
+    // Empty when the file carries no `vn` at all. Blender writes one `vn` per corner
+    // that already encodes smooth shading, flat faces and sharp edges, so
+    // interpolating these reproduces its shading normal without reading `s` groups.
+    std::vector<vec3f> normal;
+    bool hasNormals() const { return !normal.empty() && normal.size() == vertex.size(); }
 };

@@ -163,6 +163,10 @@ class IUMGenerator:
         ...
     def render(self) -> None:
         ...
+    def set_mesh_normals(self, mode: str) -> None:
+        """
+        "triangle" (flat, default) or "obj" (the OBJ vn interpolated)
+        """
     def set_texture_size(self, size: vec2i) -> None:
         ...
     def set_traversable(self, model: TriangleMesh) -> None:
@@ -334,6 +338,17 @@ class TriangleMesh:
     def __init__(self) -> None:
         ...
     def add_from_obj_file(self, filename: str) -> None:
+        ...
+    @property
+    def has_normals(self) -> bool:
+        """
+        True when the loaded OBJ carries per-corner normals (vn)
+        """
+    @property
+    def num_triangles(self) -> int:
+        ...
+    @property
+    def num_vertices(self) -> int:
         ...
 class VisibilityGenerator:
     def __init__(self) -> None:

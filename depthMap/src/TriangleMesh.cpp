@@ -43,6 +43,11 @@ void TriangleMesh::addFromObjFile(const std::string& filename)
     }
 
     bool hasTexCoords = !attrib.texcoords.empty();
+    const bool hasObjNormals = !attrib.normals.empty();
+    // Keep `normal` parallel to `vertex` even when meshes are appended to one that
+    // had none (or the other way round): missing corners get (0,0,0).
+    if (hasObjNormals && normal.size() < vertex.size())
+        normal.resize(vertex.size(), vec3f(0.f));
 
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
@@ -76,6 +81,19 @@ void TriangleMesh::addFromObjFile(const std::string& filename)
                 else {
                     // Default texture coordinates if not available
                     texcoord.push_back(vec2f(0.f, 0.f));
+                }
+
+                // Corner normal from the file, normalised; (0,0,0) marks "none".
+                if (hasObjNormals || !normal.empty()) {
+                    vec3f n(0.f);
+                    if (hasObjNormals && idx.normal_index >= 0) {
+                        n = vec3f(attrib.normals[3 * idx.normal_index + 0],
+                                  attrib.normals[3 * idx.normal_index + 1],
+                                  attrib.normals[3 * idx.normal_index + 2]);
+                        const float len = length(n);
+                        n = (len > 1e-12f) ? n * (1.f / len) : vec3f(0.f);
+                    }
+                    normal.push_back(n);
                 }
 
                 face_idx[v] = static_cast<int>(vertex.size() - 1);
@@ -126,4 +144,8 @@ void TriangleMesh::addUnitCube(const affine3f& xfm)
         index.push_back(firstVertexID + vec3i(indices[3 * i + 0],
             indices[3 * i + 1],
             indices[3 * i + 2]));
+
+    // The cube has no file normals: keep `normal` parallel to `vertex` if in use.
+    if (!normal.empty())
+        normal.resize(vertex.size(), vec3f(0.f));
 }

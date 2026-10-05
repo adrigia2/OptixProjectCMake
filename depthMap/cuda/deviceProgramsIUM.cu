@@ -143,9 +143,25 @@ using namespace osc;
 		const vec3f e2 = worldPos2 - worldPos0;
 		const vec3f faceNormal = normalize(cross(e1, e2));
 
+		// "obj" mesh normals: the file's corner normals, interpolated with the same
+		// barycentrics as the position, i.e. Blender's shading normal before any
+		// normal map (smooth or flat as the OBJ says). A corner without `vn` (0,0,0)
+		// or a degenerate blend falls back to the triangle normal.
+		vec3f normal = faceNormal;
+		if (optixLaunchParams.data.useObjNormals && optixLaunchParams.data.worldNormals) {
+			const vec3f n0 = optixLaunchParams.data.worldNormals[index.x];
+			const vec3f n1 = optixLaunchParams.data.worldNormals[index.y];
+			const vec3f n2 = optixLaunchParams.data.worldNormals[index.z];
+			const bool complete = dot(n0, n0) > 0.f && dot(n1, n1) > 0.f && dot(n2, n2) > 0.f;
+			const vec3f blended = w * n0 + u * n1 + v * n2;
+			const float len2 = dot(blended, blended);
+			if (complete && len2 > 1e-12f)
+				normal = blended * (1.0f / sqrtf(len2));
+		}
+
 		// Store the result
 		prd.position = worldPosition;
-		prd.normal = faceNormal;
+		prd.normal = normal;
 		prd.mask = 1;  // valid hit
 	}
 

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 /// <summary>
 /// compiled ptx code from the .cu file, embedded as a string literal in the executable.
@@ -91,6 +92,11 @@ void IUM_Generator::render()
 		return;
 	}
 
+	if (useObjNormals && !meshHasNormals)
+		throw std::runtime_error("IUM_Generator::render: mesh normals \"obj\" requested, "
+			"but the mesh has no OBJ normals (vn)");
+	launchParams.data.useObjNormals = useObjNormals ? 1u : 0u;
+
 	launchParamsBuffer.resize(sizeof(LaunchParams_IUM));
 	launchParamsBuffer.upload(&launchParams, 1);
 	OptixManager::instance().render(launchParams.size.x, launchParams.size.y, 1, pipeline, launchParamsBuffer, sbt);
@@ -123,6 +129,7 @@ void IUM_Generator::cleanup()
 	masksBuffer.free();
 	worldVertexBuffer.free();
 	uvCoordBuffer.free();
+	worldNormalBuffer.free();
 	launchParamsBuffer.free();
 }
 
@@ -143,8 +150,30 @@ void IUM_Generator::setTraversable(const TriangleMesh& model)
 	launchParams.data.indices = (vec3i*)indexBuffer.d_pointer();
 	launchParams.data.numTriangles = (uint32_t)model.index.size();
 
-	LogManager::Log("IUM geometry data uploaded: %zu vertices, %zu triangles",
-		model.vertex.size(), model.index.size());
+	// The OBJ normals, when the mesh has them: only read with setMeshNormals("obj")
+	meshHasNormals = model.hasNormals();
+	if (meshHasNormals) {
+		worldNormalBuffer.alloc_and_upload(model.normal);
+		launchParams.data.worldNormals = (vec3f*)worldNormalBuffer.d_pointer();
+	}
+	else {
+		launchParams.data.worldNormals = nullptr;
+	}
+	launchParams.data.useObjNormals = 0u;
+
+	LogManager::Log("IUM geometry data uploaded: %zu vertices, %zu triangles, OBJ normals: %s",
+		model.vertex.size(), model.index.size(), meshHasNormals ? "yes" : "no");
+}
+
+void IUM_Generator::setMeshNormals(const std::string& mode)
+{
+	if (mode == "triangle")
+		useObjNormals = false;
+	else if (mode == "obj")
+		useObjNormals = true;
+	else
+		throw std::invalid_argument("IUM_Generator::setMeshNormals: expected \"triangle\" "
+			"or \"obj\", got \"" + mode + "\"");
 }
 
 void IUM_Generator::setTextureSize(vec2i size)
@@ -297,4 +326,4 @@ OptixTraversableHandle IUM_Generator::createGAS(const TriangleMesh& model)
 	compactedSizeBuffer.free();
 
 	return asHandle;
-}
+}

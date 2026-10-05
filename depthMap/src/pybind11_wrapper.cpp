@@ -167,7 +167,11 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def(py::init<>())
 		.def("add_from_obj_file",
 			&TriangleMesh::addFromObjFile,
-			py::arg("filename"));
+			py::arg("filename"))
+		.def_property_readonly("has_normals", &TriangleMesh::hasNormals,
+			"True when the loaded OBJ carries per-corner normals (vn)")
+		.def_property_readonly("num_vertices", [](const TriangleMesh& m) { return m.vertex.size(); })
+		.def_property_readonly("num_triangles", [](const TriangleMesh& m) { return m.index.size(); });
 
 	py::class_<Camera>(m, "Camera")
 		.def(py::init([](const gdt::vec3f& pos, const gdt::vec3f& forward, const gdt::vec3f& up,
@@ -207,6 +211,8 @@ PYBIND11_MODULE(OptixProgrammablePasses, m, py::mod_gil_not_used()) {
 		.def("set_texture_size", [](IUM_Generator& self, gdt::vec2i size) {
 			self.setTextureSize(size);
 		}, py::arg("size"))
+		.def("set_mesh_normals", &IUM_Generator::setMeshNormals, py::arg("mode"),
+			"\"triangle\" (flat, default) or \"obj\" (the OBJ vn interpolated)")
 		.def("render", &IUM_Generator::render)
 		.def("get_result", [](IUM_Generator& self) -> IUM_Generator::Result {
 			return self.getResult();
